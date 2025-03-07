@@ -31,6 +31,7 @@
         "drupal/ckeditor": "^1.23",
         "drupal/composer_autoloader": "^1.0",
         "drupal/date": "^2.14",
+        "drupal/devel": "^1.7",
         "drupal/drupal": "^7.62",
         "drupal/entityreference": "^1.9",
         "drupal/features": "^2.15",

@@ -10,12 +10,14 @@
  * Perform actions to set up the site for this profile.
  */
 function migraine_install() {
-  $vocabulary = (object) array(
-    'name' => st('Cheese regions'),
-    'description' => '',
-    'machine_name' => 'cheese_regions',
-  );
-  taxonomy_vocabulary_save($vocabulary);
+  if (!$vocabulary = taxonomy_vocabulary_machine_name_load('cheese_regions')) {
+    $vocabulary = (object)array(
+      'name' => st('Cheese regions'),
+      'description' => '',
+      'machine_name' => 'cheese_regions',
+    );
+    taxonomy_vocabulary_save($vocabulary);
+  }
 
   module_load_include('admin.inc', 'taxonomy_manager');
 
@@ -94,4 +96,16 @@ function migraine_install() {
     ->execute();
   variable_set('admin_theme', 'seven');
   variable_set('node_admin_theme', '1');
+
+  // Generate test content.
+  module_load_include('inc', 'devel_generate', 'devel_generate');
+  module_load_include('inc', 'devel_generate');
+
+  $values = array();
+  $values['values']['kill_content'] = FALSE;
+  $values['values']['title_length'] = 6;
+  $values['values']['num_nodes'] = 50;
+  $values['values']['max_comments'] = 0;
+  $values['values']['node_types'] = $node_types = drupal_map_assoc(['article']);
+  devel_generate_content($values);
 }
