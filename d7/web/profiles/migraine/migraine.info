@@ -1,0 +1,6 @@
+name = Migraine
+description = Install profile.
+version = VERSION
+core = 7.x
+dependencies[] = everything
+dependencies[] = taxonomy_manager

@@ -10,10 +10,10 @@
  */
 function everything_taxonomy_default_vocabularies() {
   return array(
-    'tags' => array(
-      'name' => 'Tags',
-      'machine_name' => 'tags',
-      'description' => 'Use tags to group articles on similar topics into categories.',
+    'cheese_regions' => array(
+      'name' => 'Cheese regions',
+      'machine_name' => 'cheese_regions',
+      'description' => '',
       'hierarchy' => 0,
       'module' => 'taxonomy',
       'weight' => 0,
