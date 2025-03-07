@@ -1,0 +1,19 @@
+{
+    "name": "jamsilver/migraine-drupal10",
+    "description": "Test D10 site for migrations.",
+    "type": "package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "James Silver",
+            "email": "james@threespires.io"
+        }
+    ],
+    "require": {},
+    "require-dev": {
+        "drupal/core": "^10.3",
+        "drush/drush": "^13.0",
+        "drupal/admin_toolbar": "^3.5.0",
+        "drupal/devel": "^5.3.1"
+    }
+}
