@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * @file
+ * Code for the Everything feature.
+ */
+
+include_once 'everything.features.inc';
