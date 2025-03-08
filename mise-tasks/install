@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#MISE description="Installs the testing sites."
+
+set -e
+
+source "$MISE_TASK_DIR/includes/helpers.sh"
+
+cd "$MISE_ORIGINAL_CWD"
+
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  echo "Not in a project repo."
+  exit 2
+fi
+
+is_project_running() {
+    ddev describe | grep "OK" > /dev/null 2>&1
+}
+
+echo "Starting D7 site.."
+run pushd d7
+if ! is_project_running; then
+  run ddev start
+fi
+run ddev composer install
+run ddev drush site:install migraine -y
+run popd
+
+echo "Starting D10 site.."
+run pushd d10
+if ! is_project_running; then
+  run ddev start
+fi
+run ddev composer install
+run ddev drush site:install --existing-config -y
+run popd
+
+echo "Printing login URLs.."
+(cd d7; run ddev drush user:login)
+(cd d10; run ddev drush user:login)
