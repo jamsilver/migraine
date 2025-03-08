@@ -1,0 +1,55 @@
+uuid: 99ccdac6-8dc3-402e-8616-ac86815fa874
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.paragraph.hero_carousel.field_copy
+    - field.field.paragraph.hero_carousel.field_image
+    - field.field.paragraph.hero_carousel.field_link
+    - field.field.paragraph.hero_carousel.field_title
+    - paragraphs.paragraphs_type.hero_carousel
+  module:
+    - link
+    - text
+id: paragraph.hero_carousel.default
+targetEntityType: paragraph
+bundle: hero_carousel
+mode: default
+content:
+  field_copy:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  field_image:
+    type: entity_reference_entity_view
+    label: above
+    settings:
+      view_mode: default
+      link: false
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  field_link:
+    type: link
+    label: above
+    settings:
+      trim_length: 80
+      url_only: false
+      url_plain: false
+      rel: ''
+      target: ''
+    third_party_settings: {  }
+    weight: 3
+    region: content
+  field_title:
+    type: string
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden: {  }

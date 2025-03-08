@@ -1,0 +1,25 @@
+uuid: cc807352-f39f-435b-9837-9b680a9d4f63
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_modules
+    - node.type.article
+  module:
+    - entity_reference_revisions
+id: node.article.field_modules
+field_name: field_modules
+entity_type: node
+bundle: article
+label: Modules
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:paragraph'
+  handler_settings:
+    target_bundles: {  }
+    negate: 0
+field_type: entity_reference_revisions

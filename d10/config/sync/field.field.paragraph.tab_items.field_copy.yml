@@ -1,0 +1,24 @@
+uuid: f4bb7fc5-d2d6-4fd9-be07-e825b22ca699
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.paragraph.field_copy
+    - filter.format.basic_html
+    - paragraphs.paragraphs_type.tab_items
+  module:
+    - text
+id: paragraph.tab_items.field_copy
+field_name: field_copy
+entity_type: paragraph
+bundle: tab_items
+label: Copy
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - basic_html
+field_type: text_long

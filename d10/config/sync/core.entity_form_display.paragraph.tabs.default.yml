@@ -1,0 +1,54 @@
+uuid: fd3d7a8d-8c13-4c00-b540-c9af469d21f7
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.paragraph.tabs.field_copy
+    - field.field.paragraph.tabs.field_tab_items
+    - field.field.paragraph.tabs.field_title
+    - paragraphs.paragraphs_type.tabs
+  module:
+    - paragraphs
+    - text
+id: paragraph.tabs.default
+targetEntityType: paragraph
+bundle: tabs
+mode: default
+content:
+  field_copy:
+    type: text_textarea
+    weight: 1
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_tab_items:
+    type: paragraphs
+    weight: 2
+    region: content
+    settings:
+      title: Paragraph
+      title_plural: Paragraphs
+      edit_mode: open
+      closed_mode: summary
+      autocollapse: none
+      closed_mode_threshold: 0
+      add_mode: dropdown
+      form_display_mode: default
+      default_paragraph_type: ''
+      features:
+        collapse_edit_all: collapse_edit_all
+        duplicate: duplicate
+    third_party_settings: {  }
+  field_title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  status: true

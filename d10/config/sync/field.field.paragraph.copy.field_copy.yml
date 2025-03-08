@@ -1,0 +1,24 @@
+uuid: 5be10205-4ba0-4362-883d-7d392555d0d6
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.paragraph.field_copy
+    - filter.format.basic_html
+    - paragraphs.paragraphs_type.copy
+  module:
+    - text
+id: paragraph.copy.field_copy
+field_name: field_copy
+entity_type: paragraph
+bundle: copy
+label: Copy
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  allowed_formats:
+    - basic_html
+field_type: text_long

@@ -1,0 +1,40 @@
+uuid: ce759727-87e2-4044-99dd-469e253fe055
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.paragraph.field_tab_items
+    - paragraphs.paragraphs_type.tab_items
+    - paragraphs.paragraphs_type.tabs
+  module:
+    - entity_reference_revisions
+id: paragraph.tabs.field_tab_items
+field_name: field_tab_items
+entity_type: paragraph
+bundle: tabs
+label: 'Tab items'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:paragraph'
+  handler_settings:
+    target_bundles:
+      tab_items: tab_items
+    negate: 0
+    target_bundles_drag_drop:
+      copy:
+        weight: 5
+        enabled: false
+      hero_carousel:
+        weight: 6
+        enabled: false
+      tab_items:
+        weight: 8
+        enabled: true
+      tabs:
+        weight: 7
+        enabled: false
+field_type: entity_reference_revisions

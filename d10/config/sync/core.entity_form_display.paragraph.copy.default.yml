@@ -1,0 +1,34 @@
+uuid: 7e928365-2f97-4292-9bef-efb2cd3e6f77
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.paragraph.copy.field_copy
+    - field.field.paragraph.copy.field_title
+    - paragraphs.paragraphs_type.copy
+  module:
+    - text
+id: paragraph.copy.default
+targetEntityType: paragraph
+bundle: copy
+mode: default
+content:
+  field_copy:
+    type: text_textarea
+    weight: 1
+    region: content
+    settings:
+      rows: 5
+      placeholder: ''
+    third_party_settings: {  }
+  field_title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  created: true
+  status: true

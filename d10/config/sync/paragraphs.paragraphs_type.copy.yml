@@ -1,0 +1,10 @@
+uuid: 5b8e455b-0c05-428d-855f-214738ae8c39
+langcode: en
+status: true
+dependencies: {  }
+id: copy
+label: Copy
+icon_uuid: null
+icon_default: null
+description: ''
+behavior_plugins: {  }

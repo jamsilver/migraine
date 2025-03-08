@@ -1,0 +1,10 @@
+uuid: a7357f40-9384-4ee0-9f9f-5d8b77909e64
+langcode: en
+status: true
+dependencies: {  }
+id: hero_carousel
+label: 'Hero carousel'
+icon_uuid: null
+icon_default: null
+description: ''
+behavior_plugins: {  }
