@@ -18,10 +18,11 @@ These scripts assume you have a working install of both the Drupal 7 and Drupal 
 sites should be installed and working, and basic Drush commands that require a database connection should function on 
 both.
 
-These scripts read/write files in `.migraine/` in the directory you run the command from, so stay in the same working
-directory when you run them.
+These scripts create a `.migraine/` folder in in your working directory to store/retrieve (e.g.) site inventory information.
+As such, you must run your commands from this. Most likely this will be your Drupal 10 project root.
 
-The scripts assume both sites are being served with DDEV, but this can be worked-around (see below).
+You may choose to exclude the `.migraine` folder via a line in your `.gitignore` file. Or, you may choose to commit it to
+the repo to collaborate with others on migration planning and AI prompt documents.
 
 
 ## The Scripts
@@ -38,7 +39,7 @@ Export entity type and field information about a Drupal 10 site to `.migraine/d1
 
     mise run migraine:inventory:d10 .
 
-These scripts need to invoke drush in the context of the given site. They do this by `cd`-ing to the path you provide and exec-ing `ddev drush`. If you don't use ddev, this will not work. You must override the drush command-string with one that works via the `--drush` options, For example:
+These scripts need to invoke drush in the context of the given site. They do this by `cd`-ing to the path you provide and exec-ing `ddev drush`. If you don't use ddev, this will not work. You must override the drush command-string with one that works via the `--drush` command-line option. For example:
 
     mise run migraine:inventory:d7 /path/to/d7 --drush "php vendor/bin/drush"
 
