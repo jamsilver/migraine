@@ -95,11 +95,18 @@ Suggest these steps:
 
  - Put good quality example migrations in `.migraine/template_migrations`. Can start with some of core's, but as you make your own migrations, include them instead.
  - Configure aider to use architect mode, I like openai/o1 for the main model, and then claude sonnet as the editor model,
- - Make a `.aider.chat.yml` in your project root with, e.g., the following:
+ - Start aider specifying `--read`/`read:` as the migration's prompt file and the template migrations directory. For example, via command-line options:
 
-       map-tokens: 0                           # No need to send a repo map up for this.
+       aider --map-tokens=0 --read=.migraine/prompts/node_article.md --read=.migraine/template_migrations
+
+   Or by creating a `.aider.conf.yml` file in your project root containing:
+
+       map-tokens: 0
        read:
-         - .migraine/prompts/node_article.md   # The prompt file for the migration you're working on right now
+         - .migraine/prompts/node_article.md
          - .migraine/template_migrations
 
- - Then start aider and instruct it read your prompt file and follow its instructions.
+   And executing `aider` to start
+
+ - Once aider has started, try a prompt like this: `Read .migraine/prompts/node_article.md and follow all instructions` to initiate yaml generation.
+
