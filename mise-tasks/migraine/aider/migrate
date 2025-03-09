@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -e
+
+#MISE description="Starts aider to generate, or update, an actual migration yaml."
+#USAGE flag "-f --force" help="Set this to ignore an empty template_migrations directory"
+#USAGE arg "<migration_id>" help="The ID of the migration to guess the mapping for"
+#USAGE arg "[dir]" help="Output directory" default=".migraine"
+
+source "$MISE_TASK_DIR/../.includes/helpers.sh"
+
+cd "$MISE_ORIGINAL_CWD"
+
+OUT_DIR="${usage_dir:-.migraine}"
+FORCE="${usage_force:-false}"
+MIGRATION_ID="$usage_migration_id"
+
+if [ ! -d "$OUT_DIR" ] ; then
+  echo "Migraine directory $OUT_DIR does not exist or is not a directory. Have you run migraine:inventory?" >&2
+  exit 1
+fi
+
+if [ ! -d "$OUT_DIR/prompts" ] || [ ! -r "$OUT_DIR/prompts/$MIGRATION_ID.md" ] ; then
+  echo "Could not find $OUT_DIR/prompts/$MIGRATION_ID.md. Have you run migraine:make:prompt?" >&2
+  exit 1
+fi
+
+if [ ! -d "$OUT_DIR/template_migrations" ]; then
+  mkdir "$OUT_DIR/template_migrations"
+fi
+
+if [ ! "$FORCE" == "true" ] && [ -z "$(find "$OUT_DIR/template_migrations" -maxdepth 1 -name "*.yml" -type f -print -quit)" ]; then
+  echo "" >&2
+  echo "  [WARNING] There are no yml files in "$OUT_DIR/template_migrations". You will see greatly improved" >&2
+  echo "  results if you copy some example migrations into this folder. Why not copy some from Drupal 10"  >&2
+  echo "  core locations such as:" >&2
+  echo "    - core/modules/node/migrations/" >&2
+  echo "    - core/modules/user/migrations/" >&2
+  echo "" >&2
+  echo "  To disregard this error and proceed anyway, pass the --force option to this command." >&2
+  echo "" >&2
+  exit 1
+fi
+
+run aider \
+  --map-tokens=0 \
+  --read="$OUT_DIR/prompts/$MIGRATION_ID.md" \
+  --read="$OUT_DIR/template_migrations" \
+  --message="Read $OUT_DIR/prompts/$MIGRATION_ID.md and follow all instructions."

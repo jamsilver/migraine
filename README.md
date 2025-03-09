@@ -2,39 +2,47 @@
 
 ![migrAIne logo](migraine.jpeg "migrAIne logo")
 
-**Helper scripts that use AI to support the process of developing Drupal 7 → Drupal 10 migrations.**
+**Use AI to support the process of developing your Drupal 7 → Drupal 10 migrations.**
 
-This project does not, and could never, &ldquo;fully automate&rdquo; the generation of migrations. Instead, it provides a small suite of commands
-("tasks") that reduce the developer burden by combining helper scripts and LLM requests to make it fast to gather information about your sites and
-generate the "first draft yml" of each migration.
+A small suite of commands ("tasks") that reduce the developer burden involved in information gathering and migration yml 
+creation. LLMs are used where they make sense and good old-fashioned helper scripts are used where they don&apos;t.
 
-The hope is by removing a chunk of the busywork, developers are able to invest their cognitive and creative energies more intelligently. Y'know, have more fun.
+This project does not, and could never, &ldquo;fully automate&rdquo; the generation of migrations. Instead, the hope is 
+by removing a chunk of the busywork, developers are able to invest their cognitive and creative energies more 
+intelligently. Y&apos;know, have more fun 🚀🎉😀.
 
 ## Installation/requirements
 
- - [install Mise](https://mise.jdx.dev/getting-started.html)
- - Download the contents of the `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks`, or wherever makes sense for your situation. See https://mise.jdx.dev/tasks/ for more details.
- - Install PHP version 8 (some scripts use PHP)
- - Install [llm](https://github.com/simonw/llm) and set up key(s) of your choice to unlock `migraine:llm:*` tasks.
- - Install [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks. Recommend `--architect`, `--model=openai/o1`, and `--editor-model=claude-3-7-sonnet-20250219`
+ - [Install mise](https://mise.jdx.dev/getting-started.html),
+ - Download the contents of this repo's `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks` (see [mise task docs](https://mise.jdx.dev/tasks/) for more information about task locations),
+ - Install PHP version 8 (some tasks require PHP),
+ - Install and configure [llm](https://github.com/simonw/llm) to unlock `migraine:llm:*` tasks,
+ - Install and configure [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks. Recommend `--architect` mode,
+
+This tool _invokes_ `llm` and `aider` but does not configure them. It is up to you to register with your preferred AI 
+provider, generate API keys, and configure `llm` and `aider`the way you like it. If you like, you can look at 
+[example aider configuration below](example-aider-configuration). This closely resembles my own set-up, so should work
+well with migraine.
+
+I've only tested on macOS, but all the scripts are bash and php, so they should be quite portable.
 
 ## The Set Up
 
-These scripts assume you have a working install of both the Drupal 7 and Drupal 10 site locally on your machine. The 
-sites should be installed and working, and basic Drush commands that require a database connection should function on 
-both.
+It is assumed you have a working installation of both the Drupal 7 and Drupal 10 site locally on your machine. The 
+sites should be "upped" and functional. You must be able to run Drush commands that require a full bootstrap and
+database connection.
 
-These scripts create a `.migraine/` folder in in your working directory to store/retrieve (e.g.) site inventory information.
-As such, you must run all commands from the same working directory for them to work properly. Most likely this will be your 
-Drupal 10 project root.
+These tasks create a `.migraine/` folder in your working directory to store/retrieve (e.g.) site inventory and 
+prompt information. As such, you must remain in the same working directory when running migraine tasks. Most likely this 
+will be your Drupal 10 project root.
 
-You may choose to exclude the `.migraine` folder via a line in your `.gitignore` file. Or, you may choose to commit it to
-the repo to collaborate with others on migration planning and AI prompt documents.
+You may choose to exclude the `.migraine/` folder via a line in your `.gitignore` file. Or, you may choose to commit it 
+to your repo to collaborate with others on migration planning and AI prompt documents.
 
 
 ## The Tasks
 
-The examples here are given assuming you're working within your D10 project root.
+The examples here assume your working directory is a [ddev](https://github.com/ddev/ddev) project root of your Drupal 10 site.
 
 ### 1. Take an inventory of your site
 
@@ -46,6 +54,8 @@ Export entity type and field information about a Drupal 10 site to `.migraine/d1
 
     mise run migraine:inventory:d10 .
 
+#### Non-ddev drush support
+
 These scripts need to invoke drush in the context of the given site. They do this by `cd`-ing to the path you provide and exec-ing `ddev drush`. If you don't use ddev, this will not work. You must override the drush command-string with one that works via the `--drush` command-line option. For example:
 
     mise run migraine:inventory:d7 /path/to/d7 --drush "php vendor/bin/drush"
@@ -53,7 +63,7 @@ These scripts need to invoke drush in the context of the given site. They do thi
 
 ### 2. Work out what migrations you need
 
-The idea is to make a file `.migraine/migrations.json` that states all migrations we need to make.
+The idea is to have a file `.migraine/migrations.json` that lists all needed migrations.
 
 Run this task to ask AI to look at your site inventories and generate this file for you:
 
@@ -65,10 +75,9 @@ It's possible invalid JSON will be generated, and of course only you know what t
 this file by hand before moving on to the next step.
 
 
-### 3. Generate prompt documents for each migration
+### 3. Generate an AI prompt file for each migration
 
-This task iterates over each migration in `.migraine/migrations.json` and generates a markdown file suitable for
-instructing an LLM to make the yml for it:
+This task iterates over each migration in `.migraine/migrations.json` and generates a suitable markdown file:
 
     mise run migraine:make:prompt \*
 
@@ -79,7 +88,10 @@ You can also generate one at a time:
 The first time this runs, the template used to generate them is placed in `.migraine/templates/migration-prompt.md`.
 You are free to update this and re-run.
 
-This document is a starting point. It's important to complete the ## Field mapping section before moving on.
+These prompt files are only a starting point. 
+
+Complete the ## Field mapping section to describe how source files are mapped to destination files in whatever format
+makes sense to you and is clear and non-ambiguous for LLMs to understand.
 
 
 ### 4. Improve the prompt document
@@ -93,27 +105,28 @@ improve the document, or not. If there are no mappings specified, the AI will tr
 basic mappings should be.
 
 
-### 5. Generating the YAML
+### 5. Generate the yml file for a migration
 
-Recommend using [aider](https://github.com/Aider-AI/aider) for this in architect mode. It's very good at automatically updating files based on LLM feedback.
-Also, it is _vital_ to have good, representative template migrations you can pass to the AI as an example.
+This command invokes `aider` to generate a migration yml for a given migration. For example:
 
-Suggest these steps:
+    mise run migraine:aider:migrate node_article
 
- - Put good quality example migrations in `.migraine/template_migrations`. Can start with some of core's, but as you make your own migrations, include them instead.
- - Configure aider to use architect mode, I like openai/o1 for the main model, and then claude sonnet as the editor model,
- - Start aider specifying `--read`/`read:` as the migration's prompt file and the template migrations directory. For example, via command-line options:
+For good results it's vital you put high-quality example migrations in `.migraine/template_migrations`.
 
-       aider --map-tokens=0 --read=.migraine/prompts/node_article.md --read=.migraine/template_migrations
 
-   Or by creating a `.aider.conf.yml` file in your project root containing:
+## Example aider configuration
 
-       map-tokens: 0
-       read:
-         - .migraine/prompts/node_article.md
-         - .migraine/template_migrations
+At the time of writing I've experienced good results with openai's `o3*` or `o1` models for planning/reasoning, and anthropic's
+claude `sonnet` for code generation/editing.
 
-   And executing `aider` to start
+My personal `~/.aider.conf.yml` file looks something like this:
 
- - Once aider has started, try a prompt like this: `Read .migraine/prompts/node_article.md and follow all instructions` to initiate yaml generation.
-
+    model: openai/o1
+    openai-api-key: ...
+    anthropic-api-key: ...
+    architect: true
+    editor-model: sonnet
+    map-tokens: 0          # Never want to accidentally send codebase details up to the cloud,
+    dark-mode: true
+    auto-commits: false    # I want to control my own commits thank you,
+    analytics-disable: true
