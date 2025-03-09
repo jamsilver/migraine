@@ -16,7 +16,7 @@ The hope is by removing a chunk of the busywork, developers are able to invest t
  - Download the contents of the `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks`, or wherever makes sense for your situation. See https://mise.jdx.dev/tasks/ for more details.
  - Install PHP version 8 (some scripts use PHP)
  - Install [llm](https://github.com/simonw/llm) and set up key(s) of your choice to unlock `migraine:llm:*` tasks.
- - Install [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks
+ - Install [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks. Recommend `--architect`, `--model=openai/o1`, and `--editor-model=claude-3-7-sonnet-20250219`
 
 ## The Set Up
 
