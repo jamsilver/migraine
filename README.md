@@ -143,7 +143,8 @@ This command passes your carefully-crafted prompt file to `aider` to generate a 
 
     mise run migraine:aider:migrate node_article
 
-For good results it's vital you put high-quality example migrations in `.migraine/template_migrations`.
+For good results it's vital you put high-quality example migrations that exhibit the patterns you wish the AI to use in 
+`.migraine/template_migrations`.
 
 
 ## Example aider configuration
