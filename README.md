@@ -2,7 +2,7 @@
 
 ![migrAIne logo](migraine.jpeg "migrAIne logo")
 
-Helper scripts to support the process of developing Drupal 7 --> Drupal 10 migrations.
+Helper scripts that use AI to support the process of developing Drupal 7 --> Drupal 10 migrations.
 
 ## Installation/requirements
 
