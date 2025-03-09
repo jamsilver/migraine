@@ -2,7 +2,7 @@
 
 ![migrAIne logo](migraine.jpeg "migrAIne logo")
 
-**Use AI to support the process of developing your Drupal 7 → Drupal 10 migrations.**
+**Use AI to support the process of developing Drupal 7 → Drupal 10 migrations.**
 
 A small suite of commands ("tasks") that reduce the developer burden involved in information gathering and migration yml 
 creation. LLMs are used where they make sense and good old-fashioned helper scripts are used where they don&apos;t.
