@@ -9,22 +9,52 @@ creation. LLMs are used where they make sense and good old-fashioned helper scri
 
 This project does not, and could never, &ldquo;fully automate&rdquo; the generation of migrations. Instead, the hope is 
 by removing a chunk of the busywork, developers are able to invest their cognitive and creative energies more 
-intelligently. Y&apos;know, have more fun 🚀🎉😀.
+intelligently. Y&apos;know. Have more fun 🚀 🎉 😀.
+
+
+## TL;DR
+
+Install everything (see below) and then:
+
+    # 1. Gather entity type/field structure data about the source site.
+    mise run migraine:inventory:d7 /path/to/d7
+
+    # Gather entity type/field structure data about the destination site.
+    mise run migraine:inventory:d10 .
+
+    # 2. Make JSON list of all needed migrations.
+    mise run migraine:llm:guess-migrations
+
+      # Hand-fix/tweak .migraine/migrations.json.
+
+    # 3. Generate an AI prompt file for each migration.
+    mise run migraine:make:prompt \*
+
+    # 4. Generate a migration yml file.
+    mise run migraine:llm:improve-mapping <MIGRATION_ID>
+    mise run migraine:aider:migrate <MIGRATION_ID>
+
+      # Hand-fix/tweak config/sync/migrate_plus.migration.<MIGRATION_ID>.yml.
+      # Test.
+      # Commit.
+      # Repeat.
+
 
 ## Installation/requirements
 
  - [Install mise](https://mise.jdx.dev/getting-started.html),
- - Download the contents of this repo's `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks` (see [mise task docs](https://mise.jdx.dev/tasks/) for more information about task locations),
+ - Download the contents of this repo's `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks` (see [mise task docs](https://mise.jdx.dev/tasks/) for more information),
  - Install PHP version 8 (some tasks require PHP),
  - Install and configure [llm](https://github.com/simonw/llm) to unlock `migraine:llm:*` tasks,
  - Install and configure [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks. Recommend `--architect` mode,
 
 This tool _invokes_ `llm` and `aider` but does not configure them. It is up to you to register with your preferred AI 
 provider, generate API keys, and configure `llm` and `aider`the way you like it. If you like, you can look at 
-[example aider configuration below](example-aider-configuration). This closely resembles my own set-up, so should work
+[example aider configuration below](#example-aider-configuration). This closely resembles my own set-up, so should work
 well with migraine.
 
 I've only tested on macOS, but all the scripts are bash and php, so they should be quite portable.
+
 
 ## The Set Up
 
@@ -43,6 +73,7 @@ to your repo to collaborate with others on migration planning and AI prompt docu
 ## The Tasks
 
 The examples here assume your working directory is a [ddev](https://github.com/ddev/ddev) project root of your Drupal 10 site.
+
 
 ### 1. Take an inventory of your site
 
@@ -107,7 +138,7 @@ basic mappings should be.
 
 ### 5. Generate the yml file for a migration
 
-This command invokes `aider` to generate a migration yml for a given migration. For example:
+This command passes your carefully-crafted prompt file to `aider` to generate a migration yml. For example:
 
     mise run migraine:aider:migrate node_article
 
