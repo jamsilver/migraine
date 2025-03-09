@@ -9,15 +9,15 @@ are two parts to this repo:
 ## Installation/requirements
 
  - [install Mise](https://mise.jdx.dev/getting-started.html)
- - Download/copy the contents of mise-tasks into your project folder, or `$HOME/.config/mise/tasks`, or wherever makes sense for your situation. See https://mise.jdx.dev/tasks/ for more details.
+ - Download/copy the contents of mise-tasks into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks`, or wherever makes sense for your situation. See https://mise.jdx.dev/tasks/ for more details.
  - Install PHP version 8 (some scripts use PHP)
  - Install [llm](https://github.com/simonw/llm), configure it with a key of your choice (recommend openai).
 
 ## The Set Up
 
-These scripts assume you are doing a Drupal 7 -> Drupal 10 migration, and that you have a working install of both
-the Drupal 7 and Drupal 10 site locally on your machine. The sites should be installed and working, and basic
-Drush commands that require a database connection should function on both.
+These scripts assume you have a working install of both the Drupal 7 and Drupal 10 site locally on your machine. The 
+sites should be installed and working, and basic Drush commands that require a database connection should function on 
+both.
 
 These scripts read/write files in `.migraine/` in the directory you run the command from, so stay in the same working
 directory when you run them.
@@ -25,21 +25,23 @@ directory when you run them.
 The scripts assume both sites are being served with DDEV, but this can be worked-around (see below).
 
 
-## The Scripts:
+## The Scripts
+
+The examples here are given assuming you're working within your D10 project root.
 
 ### 1. Take an inventory of your site
 
 Export entity type and field information about a Drupal 7 site to `.migraine/d7`
 
-    mise run migraine:inventory:d7 path/to/d7/webroot
+    mise run migraine:inventory:d7 /path/to/d7
 
 Export entity type and field information about a Drupal 10 site to `.migraine/d10`
 
-    mise run migraine:inventory:d10 path/to/d10/webroot
+    mise run migraine:inventory:d10 .
 
 If your site isn't being served with ddev, then override the command you need to run to invoke drush from the webroot like this:
 
-    mise run migraine:inventory:d7 path/to/d7/webroot --drush "../vendor/bin/drush"
+    mise run migraine:inventory:d7 /path/to/d7 --drush "../vendor/bin/drush"
 
 
 ### 2. Work out what migrations you need
