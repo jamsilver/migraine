@@ -19,7 +19,8 @@ sites should be installed and working, and basic Drush commands that require a d
 both.
 
 These scripts create a `.migraine/` folder in in your working directory to store/retrieve (e.g.) site inventory information.
-As such, you must run your commands from this. Most likely this will be your Drupal 10 project root.
+As such, you must run all commands from the same working directory for them to work properly. Most likely this will be your 
+Drupal 10 project root.
 
 You may choose to exclude the `.migraine` folder via a line in your `.gitignore` file. Or, you may choose to commit it to
 the repo to collaborate with others on migration planning and AI prompt documents.
