@@ -39,6 +39,7 @@ Install everything (see below) and then:
       # Commit.
       # Repeat.
 
+For more details about each command and how you might use it, keep reading.
 
 ## Installation/requirements
 
