@@ -1,4 +1,4 @@
-# MigrAIne
+# Drupal MigrAIne
 
 Helper scripts for using AI to speed up the process of writing D7->D10 Drupal migrations. There
 are two parts to this repo:
