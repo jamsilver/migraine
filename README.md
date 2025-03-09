@@ -38,9 +38,9 @@ Export entity type and field information about a Drupal 10 site to `.migraine/d1
 
     mise run migraine:inventory:d10 .
 
-If your site isn't being served with ddev, then override the command you need to run to invoke drush from the webroot like this:
+These scripts need to invoke drush in the context of the given site. They do this by `cd`-ing to the path you provide and exec-ing `ddev drush`. If you don't use ddev, this will not work. You must override the drush command-string with one that works via the `--drush` options, For example:
 
-    mise run migraine:inventory:d7 /path/to/d7 --drush "../vendor/bin/drush"
+    mise run migraine:inventory:d7 /path/to/d7 --drush "php vendor/bin/drush"
 
 
 ### 2. Work out what migrations you need
