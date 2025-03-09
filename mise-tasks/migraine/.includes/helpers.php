@@ -178,3 +178,58 @@ function _move_migraine_scripts_to_site(string $drupalRoot, string $type) {
         }
     }
 }
+
+function _move_migraine_files_to_output_dir(string $sourceGlob, string $destDir) {
+
+    if (!is_dir($destDir) && !_mkdir($destDir)) {
+        _error("Could not find, or create, .migraine directory at %s", $destDir);
+        exit(1);
+    }
+
+    foreach (glob($sourceGlob) as $migrainePathSource) {
+        $migrainePathDest = $destDir . '/' . basename($migrainePathSource);
+
+        if (!is_file($migrainePathDest) && !_copy($migrainePathSource, $migrainePathDest)) {
+            _error("Could not move %s into .migraine directory at %s", basename($migrainePathSource), $destDir);
+            exit(1);
+        }
+    }
+}
+
+function _validateMigrations(array $migrations, string $sourceEnvType, array $sourceTypes, string $destEnvType, array $destTypes) {
+    $success = TRUE;
+    foreach ($migrations as $id => $row) {
+        if (!is_array($row) || count($row) !== 4) {
+            _error("migrations.json error: Migration %s value is not an array having 4 items.", $id);
+            $success = FALSE;
+            continue;
+        }
+
+        [$sourceType, $sourceBundle, $destType, $destBundle] = $row;
+
+        if (!is_string($sourceType) || !is_string($sourceBundle) || !isset($sourceTypes[$sourceType][$sourceBundle])) {
+            _error(
+                "migrations.json error: Migration %s source '%s.%s' does not match any type found in .migraine/%s/types.json.",
+                $id, $sourceType, $sourceBundle, $sourceEnvType,
+            );
+            $success = FALSE;
+        }
+
+        if (!is_string($destType) || !is_string($destBundle) || !isset($destTypes[$destType][$destBundle])) {
+            _error(
+                "migrations.json error: Migration %s destination '%s.%s' does not match any type found in .migraine/%s/types.json.",
+                $id, $destType, $destBundle, $destEnvType,
+            );
+            $success = FALSE;
+        }
+
+        if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_-]*$/', $id)) {
+            _error(
+                "migrations.json error: Migration '%s' ID has characters unsuitable for a migration ID. Alphanumeric with underscores and hyphens only please.",
+                $id,
+            );
+            $success = FALSE;
+        }
+    }
+    return $success;
+}

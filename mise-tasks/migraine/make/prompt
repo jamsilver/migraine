@@ -1,0 +1,93 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Create prompt(s) migrations listed in .migraine/migrations.json."
+//USAGE flag "-s --source <source>" help="The type of source drupal" default="d7" {
+//USAGE   choices "d7" "d10"
+//USAGE }
+//USAGE flag "-d --dest <dest>" help="The type of destination drupal" default="d10" {
+//USAGE   choices "d10" "d7"
+//USAGE }
+//USAGE flag "-f --force" help="Specify this and all prompts will be overwritten"
+//USAGE flag "-o --outdir <outdir>" help="Output directory" default=".migraine"
+//USAGE arg "<migrationId>" help="The ID of the migration to generate a prompt for.  Specify asterisk for all."
+
+namespace Migraine;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$limitMigrationId = $argv[1] ?? NULL;
+if ($limitMigrationId === '*') {
+    $limitMigrationId = NULL;
+}
+$outDir = getenv('usage_outdir') ?? '.migraine';
+$sourceEnvType = getenv('usage_source') ?? 'd7';
+$destEnvType = getenv('usage_dest') ?? 'd10';
+$force = getenv('usage_force') === 'true';
+
+require_once "$taskDir/../.includes/helpers.php";
+
+$resolvePath = _make_path_resolver($projectRoot);
+
+$outDir = $resolvePath($outDir, "Could not find, or create, an output directory at %s");
+$promptsDir = $resolvePath("$outDir/prompts", "Could not find, or create, a prompts directory at %s", TRUE);
+
+_move_migraine_files_to_output_dir("$taskDir/../.templates/*.md", "$outDir/templates");
+
+if (!is_file("$outDir/$sourceEnvType/types.json")
+    || !($sourceTypes = json_decode(file_get_contents("$outDir/$sourceEnvType/types.json"), TRUE))
+    || !is_array($sourceTypes)
+) {
+    _error("Could not load '%s'. Run migraine:inventory:$sourceEnvType.", "$outDir/$sourceEnvType/types.json");
+    exit(1);
+}
+
+if (!is_file("$outDir/$destEnvType/types.json")
+    || !($destTypes = json_decode(file_get_contents("$outDir/$destEnvType/types.json"), TRUE))
+    || !is_array($destTypes)
+) {
+    _error("Could not load '%s'. Run migraine:inventory:$destEnvType.", "$outDir/$destEnvType/types.json");
+    exit(1);
+}
+
+if (!is_file("$outDir/migrations.json")
+    || !($migrations = json_decode(file_get_contents("$outDir/migrations.json"), TRUE))
+    || !is_array($migrations)
+    || !_validateMigrations($migrations, $sourceEnvType, $sourceTypes, $destEnvType, $destTypes)
+) {
+    _error("Could not load '%s'. Run migraine:llm:guess-migrations, or fix issues with it by hand.", "$outDir/migrations.json");
+    exit(1);
+}
+
+if (isset($limitMigrationId)) {
+    if (!isset($migrations[$limitMigrationId])) {
+        _error("Unrecognised migration ID '%s'", $limitMigrationId);
+        exit(1);
+    }
+    $migrations = [$limitMigrationId => $migrations[$limitMigrationId]];
+}
+
+$migrationPrompt = file_get_contents("$outDir/templates/migration-prompt.md");
+
+if (empty($migrationPrompt)) {
+    _error('Template migration prompt "%s" is empty. Please fix, or delete to regenerate default one.', "$outDir/templates/migration-prompt.php");
+    exit(1);
+}
+
+foreach ($migrations as $migrationId => [$sourceType, $sourceBundle, $destType, $destBundle]) {
+    if (is_file("$promptsDir/$migrationId.md") && !(isset($limitMigrationId) || $force)) {
+        _log('Skipping "%s", it already exists and --force was not specified.', "$promptsDir/$migrationId.md");
+        continue;
+    }
+    _log('Writing "%s"', "$promptsDir/$migrationId.md");
+    file_put_contents("$promptsDir/$migrationId.md", strtr($migrationPrompt, [
+        '$MIGRATION_ID' => $migrationId,
+        '$SOURCE_ENV_TYPE' => $sourceEnvType,
+        '$SOURCE_TYPE' => $sourceType,
+        '$SOURCE_BUNDLE' => $sourceBundle,
+        '$DEST_ENV_TYPE' => $destEnvType,
+        '$DEST_TYPE' => $destType,
+        '$DEST_BUNDLE' => $destBundle,
+        '$SOURCE_FIELD_TABLE' => @file_get_contents("$outDir/$sourceEnvType/$sourceType.$sourceBundle.$sourceEnvType.txt") ?: 'The usual properties.',
+        '$DEST_FIELD_TABLE' => @file_get_contents("$outDir/$destEnvType/$destType.$destBundle.$destEnvType.txt") ?: 'The usual properties.',
+    ]));
+}

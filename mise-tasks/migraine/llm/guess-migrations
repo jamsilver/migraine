@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -e
+
+#MISE description="Generate migrations list by asking AI to guess."
+#USAGE flag "-s --source <source>" help="The type of source drupal" default="d7" {
+#USAGE   choices "d7" "d10"
+#USAGE }
+#USAGE flag "-d --dest <dest>" help="The type of destination drupal" default="d10" {
+#USAGE   choices "d10" "d7"
+#USAGE }
+#USAGE flag "-m --model <model>" help="The LLM model to use" default="o1"
+#USAGE arg "[dir]" help="Output directory" default=".migraine"
+
+source "$MISE_TASK_DIR/../.includes/helpers.sh"
+
+cd "$MISE_ORIGINAL_CWD"
+
+OUT_DIR="${usage_dir:-.migraine}"
+SOURCE_TYPE="${usage_source:-d7}"
+DEST_TYPE="${usage_dest:-d10}"
+MODEL="${usage_model:-o1}"
+
+if [ ! -d "$OUT_DIR" ] ; then
+  echo "Migraine directory $OUT_DIR does not exist or is not a directory. Have you run migraine:inventory?" >&2
+  exit 1
+fi
+
+if [ ! -d "$OUT_DIR/$SOURCE_TYPE" ] || [ ! -r "$OUT_DIR/$SOURCE_TYPE/types.json" ] ; then
+  echo "Could not find $OUT_DIR/$SOURCE_TYPE/types.json. Have you run migraine:inventory:$SOURCE_TYPE?" >&2
+  exit 1
+fi
+
+if [ ! -d "$OUT_DIR/$DEST_TYPE" ] || [ ! -r "$OUT_DIR/$DEST_TYPE/types.json" ] ; then
+  echo "Could not find $OUT_DIR/$DEST_TYPE/types.json. Have you run migraine:inventory:$DEST_TYPE?" >&2
+  exit 1
+fi
+
+SOURCE_TYPES=$(cat "$OUT_DIR/$SOURCE_TYPE/types.json")
+
+PROMPT=$(
+cat <<- END_HEREDOC
+You are an expert Drupal developer assisting with the planning and execution of a $SOURCE_TYPE to $DEST_TYPE migration.
+Given the following list of entity types/bundles in the source $SOURCE_TYPE and destination $DEST_TYPE sites, please
+suggest what migrations are needed.
+
+$SOURCE_TYPE TYPES/BUNDLES
+
+$(cat "$OUT_DIR/$SOURCE_TYPE/types.json")
+
+$DEST_TYPE TYPES/BUNDLES
+
+$(cat "$OUT_DIR/$DEST_TYPE/types.json")
+
+OUTPUT FORMAT
+
+You MUST output only a valid JSON string containing a single plain object where each value is a 4-tuple of
+[SourceEntityType,SourceBundle,DestEntityType,DestBundle] and the key is a suitably chosen short unique machine ID for
+that migration. For example:
+
+{
+  "node_article": ["node","article","node","article"],
+  "media_image": ["file","file","media","image"]
+  "media_video": ["file","file","media","video"]
+  "paragraph_foo_from_field_foo": ["field_collection","field_foo","paragraph_item","foo"]
+}
+
+END_HEREDOC
+)
+
+echo "==> Asking LLM to generate migrations ==>" >&2
+echo 'echo "$PROMPT" | llm prompt --model "'"$MODEL"'" --extract > '"$OUT_DIR/migrations.json" >&2
+echo "$PROMPT" | llm prompt --model "$MODEL" --extract > "$OUT_DIR/migrations.json"

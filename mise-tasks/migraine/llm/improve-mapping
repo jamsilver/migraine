@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -e
+
+#MISE description="Uses AI to improves the Field mapping portion of an existing migrations prompt."
+#USAGE flag "-s --source <source>" help="The type of source drupal" default="d7" {
+#USAGE   choices "d7" "d10"
+#USAGE }
+#USAGE flag "-d --dest <dest>" help="The type of destination drupal" default="d10" {
+#USAGE   choices "d10" "d7"
+#USAGE }
+#USAGE flag "-m --model <model>" help="The LLM model to use" default="o1"
+#USAGE arg "<migration_id>" help="The ID of the migration to guess the mapping for"
+#USAGE arg "[dir]" help="Output directory" default=".migraine"
+
+source "$MISE_TASK_DIR/../.includes/helpers.sh"
+
+cd "$MISE_ORIGINAL_CWD"
+
+OUT_DIR="${usage_dir:-.migraine}"
+SOURCE_TYPE="${usage_source:-d7}"
+DEST_TYPE="${usage_dest:-d10}"
+MODEL="${usage_model:-o1}"
+MIGRATION_ID="$usage_migration_id"
+
+if [ ! -d "$OUT_DIR" ] ; then
+  echo "Migraine directory $OUT_DIR does not exist or is not a directory. Have you run migraine:inventory?" >&2
+  exit 1
+fi
+
+if [ ! -d "$OUT_DIR/prompts" ] || [ ! -r "$OUT_DIR/prompts/$MIGRATION_ID.md" ] ; then
+  echo "Could not find $OUT_DIR/prompts/$MIGRATION_ID.md. Have you run migraine:make:prompt?" >&2
+  exit 1
+fi
+
+PROMPT=$(
+cat <<- END_HEREDOC
+You are an expert Drupal developer assisting with the planning and execution of a $SOURCE_TYPE to $DEST_TYPE migration.
+You are also an expert at preparing instructions for other, less intelligent, AIs. I have a document here that
+describes an individual migration I want another LLM to generate for me. Your task is to improve this document to make
+it most effective for the other LLM. In particular I want you to rewrite the "## Field mapping" section to give it more
+precision, structure, and to state more clearly each step of the Drupal process pipeline that will be necessary in the
+conversion. At the moment, this section may be written in any format by the developer (formal or informal). You must
+rewrite the ## Field mapping section to turn it into a markdown table where the first column is the name of the
+destination field, the 2nd column is the name of a source field going into it, and the 3rd column breaks down in
+detail each step of the necessary process pipeline. If you find the ## Field mapping section empty, then look at the
+other sections of the document and build a ## Field mapping table from your best guess as to how fields should be
+mapped between source and destination. There is no need to mention standard entity properties (id, revision_log, status),
+unless the developer has noted something special is happening with them.
+
+Here is the current version of the document:
+
+$(cat "$OUT_DIR/prompts/$MIGRATION_ID.md")
+
+OUTPUT FORMAT
+
+You MUST output ONLY the rewritten ## Field mapping section with no additional commentary at all.
+
+END_HEREDOC
+)
+
+echo "==> Asking MAIN LLM to generate improved Field mapping for $OUT_DIR/prompts/$MIGRATION_ID.md ==>" >&2
+echo 'echo "$PROMPT" | llm prompt --model "'"$MODEL"'"' >&2
+NEW_FIELD_MAPPING=$(echo "$PROMPT" | llm prompt --model "$MODEL")
+
+echo "New Field Mapping Table" >&2
+echo "========================" >&2
+
+echo "$NEW_FIELD_MAPPING"
