@@ -35,8 +35,6 @@ if [ ! -d "$OUT_DIR/$DEST_TYPE" ] || [ ! -r "$OUT_DIR/$DEST_TYPE/types.json" ] ;
   exit 1
 fi
 
-SOURCE_TYPES=$(cat "$OUT_DIR/$SOURCE_TYPE/types.json")
-
 PROMPT=$(
 cat <<- END_HEREDOC
 You are an expert Drupal developer assisting with the planning and execution of a $SOURCE_TYPE to $DEST_TYPE migration.
