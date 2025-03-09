@@ -474,7 +474,7 @@ function everything_field_default_field_instances() {
     'entity_type' => 'node',
     'field_name' => 'field_cheese_region',
     'label' => 'Cheese region',
-    'required' => 0,
+    'required' => 1,
     'settings' => array(
       'user_register_form' => FALSE,
     ),
@@ -588,6 +588,47 @@ function everything_field_default_field_instances() {
       'settings' => array(),
       'type' => 'link_field',
       'weight' => 5,
+    ),
+  );
+
+  // Exported field_instance: 'node-article-field_cta_position'.
+  $field_instances['node-article-field_cta_position'] = array(
+    'bundle' => 'article',
+    'default_value' => array(
+      0 => array(
+        'value' => 'centre',
+      ),
+    ),
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'list',
+        'settings' => array(),
+        'type' => 'list_default',
+        'weight' => 19,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_cta_position',
+    'label' => 'CTA position',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'options',
+      'settings' => array(),
+      'type' => 'options_buttons',
+      'weight' => 8,
     ),
   );
 
@@ -818,6 +859,51 @@ function everything_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-article-field_sub_article'.
+  $field_instances['node-article-field_sub_article'] = array(
+    'bundle' => 'article',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'entityreference',
+        'settings' => array(
+          'bypass_access' => FALSE,
+          'link' => FALSE,
+        ),
+        'type' => 'entityreference_label',
+        'weight' => 20,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'field_sub_article',
+    'label' => 'Sub-article',
+    'required' => 0,
+    'settings' => array(
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'entityreference',
+      'settings' => array(
+        'hide_ids' => 0,
+        'match_operator' => 'CONTAINS',
+        'path' => '',
+        'size' => 60,
+      ),
+      'type' => 'entityreference_autocomplete',
+      'weight' => 9,
+    ),
+  );
+
   // Exported field_instance: 'node-article-field_tabs'.
   $field_instances['node-article-field_tabs'] = array(
     'bundle' => 'article',
@@ -862,11 +948,56 @@ function everything_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-sub_article-body'.
+  $field_instances['node-sub_article-body'] = array(
+    'bundle' => 'sub_article',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'hidden',
+        'module' => 'text',
+        'settings' => array(),
+        'type' => 'text_default',
+        'weight' => 0,
+      ),
+      'teaser' => array(
+        'label' => 'hidden',
+        'module' => 'text',
+        'settings' => array(
+          'trim_length' => 600,
+        ),
+        'type' => 'text_summary_or_trimmed',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'body',
+    'label' => 'Body',
+    'required' => FALSE,
+    'settings' => array(
+      'display_summary' => TRUE,
+      'text_processing' => 1,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'module' => 'text',
+      'settings' => array(
+        'rows' => 20,
+        'summary_rows' => 5,
+      ),
+      'type' => 'text_textarea_with_summary',
+      'weight' => -4,
+    ),
+  );
+
   // Translatables
   // Included for use with string extractors like potx.
   t('Body');
   t('CTA copy');
   t('CTA link');
+  t('CTA position');
   t('CTA title');
   t('Cheese region');
   t('Customer quote');
@@ -876,6 +1007,7 @@ function everything_field_default_field_instances() {
   t('Hero link');
   t('Hero title');
   t('Image');
+  t('Sub-article');
   t('Tab Description');
   t('Tab Image');
   t('Tab Title');

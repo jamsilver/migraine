@@ -1,0 +1,95 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Generate inventory of entity types and fields for a locally-installed Drupal 7 website."
+//USAGE arg "<dir>" help="Path to Drupal 7 root"
+//USAGE arg "[dir]" help="Output directory" default=".migraine"
+//USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
+
+namespace Migraine;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$drupalRoot = $argv[1];
+$outDir = $argv[2] ?? '.migraine';
+$drushCmd = getenv('usage_drush');
+
+require_once "$taskDir/../.includes/helpers.php";
+require_once "$taskDir/../.includes/TextTable.php";
+
+$resolvePath = _make_path_resolver($projectRoot);
+
+$drupalRoot = $resolvePath($drupalRoot, "Could not find Drupal 7 root at %s");
+
+if (!_find_drupal_root($drupalRoot, 'd7')) {
+    _error("Could not find Drupal 7 root at %s", $drupalRoot);
+    exit(1);
+}
+
+$outDir = $resolvePath($outDir, "Could not find, or create, an output directory at %s", TRUE);
+
+_log('==> Moving migraine scripts to D7 webroot..');
+
+_move_migraine_scripts_to_site($drupalRoot, 'd7');
+_exec($drupalRoot, "$drushCmd cache-clear drush");
+
+$outManifestDir = "$outDir/d7";
+
+if (file_exists($outManifestDir) && !_rmrf($outManifestDir, TRUE)) {
+    _error("Error when recursively deleting output folder at %s", $outManifestDir);
+    exit(1);
+}
+if (!_mkdir($outManifestDir)) {
+    _error("Could not create D7 output directory at %s", $outManifestDir);
+    exit(1);
+}
+
+_log('==> Taking D7 site inventory..');
+
+$types = json_decode(implode('', _exec($drupalRoot, "$drushCmd php:script d7-list-types.php --script-path=.migraine-scripts")), TRUE);
+
+if (empty($types)) {
+    _error("Failed to list D7 types.");
+    exit(1);
+}
+
+$typesIndex = [];
+$fieldsIndex = [];
+
+foreach ($types as $entityTypeId => $bundles) {
+    $typesIndex += [$entityTypeId => []];
+    $fieldsIndex += [$entityTypeId => []];
+
+    foreach (array_keys($bundles) as $bundleId) {
+        $fields = json_decode(implode('', _exec($drupalRoot, "$drushCmd php:script d7-list-bundle-fields.php --script-path=.migraine-scripts -- $entityTypeId $bundleId")), TRUE);
+
+        if (!is_array($fields)) {
+            _error("Failed to list D7 fields.");
+            exit(1);
+        }
+
+        $typesIndex[$entityTypeId][$bundleId] = $bundleId;
+        $fieldsIndex[$entityTypeId][$bundleId] = $fields;
+
+        if (empty($fields)) {
+            continue;
+        }
+
+        $table = new TextTable([
+            'name' => 'D7 Field',
+            'field_type' => 'D7 Type',
+            'cardinality' => 'D7 Cardinality',
+        ], $fields);
+
+        $outputFile = "$outManifestDir/$entityTypeId.$bundleId.d7.txt";
+
+        _log('Writing %s..', $outputFile);
+        file_put_contents($outputFile, $table->render());
+    }
+
+}
+
+_log('Writing %s..', "$outManifestDir/types.json");
+file_put_contents("$outManifestDir/types.json", json_encode($typesIndex, JSON_PRETTY_PRINT));
+
+_log('Writing %s..', "$outManifestDir/fields.json");
+file_put_contents("$outManifestDir/fields.json", json_encode($fieldsIndex));

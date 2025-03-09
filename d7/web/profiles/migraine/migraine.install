@@ -106,6 +106,6 @@ function migraine_install() {
   $values['values']['title_length'] = 6;
   $values['values']['num_nodes'] = 50;
   $values['values']['max_comments'] = 0;
-  $values['values']['node_types'] = $node_types = drupal_map_assoc(['article']);
+  $values['values']['node_types'] = drupal_map_assoc(['article', 'sub_article']);
   devel_generate_content($values);
 }

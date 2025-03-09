@@ -1,0 +1,131 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Generate inventory of entity types and fields for a locally-installed Drupal 10 website."
+//USAGE arg "<dir>" help="Path to Drupal 10 root"
+//USAGE arg "[dir]" help="Output directory" default=".migraine"
+//USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
+
+namespace Migraine;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$drupalRoot = $argv[1];
+$outDir = $argv[2] ?? '.migraine';
+$drushCmd = getenv('usage_drush');
+
+require_once "$taskDir/../.includes/helpers.php";
+require_once "$taskDir/../.includes/TextTable.php";
+
+$resolvePath = _make_path_resolver($projectRoot);
+
+$drupalRoot = $resolvePath($drupalRoot, "Could not find Drupal 10 root at %s");
+
+if (!_find_drupal_root($drupalRoot, 'd10')) {
+    _error("Could not find Drupal 10 root at %s", $drupalRoot);
+    exit(1);
+}
+
+$outDir = $resolvePath($outDir, "Could not find, or create, an output directory at %s", TRUE);
+
+_log('==> Moving migraine scripts to D10 webroot..');
+
+_move_migraine_scripts_to_site($drupalRoot, 'd10');
+_exec($drupalRoot, "$drushCmd cache:rebuild");
+
+$outManifestDir = "$outDir/d10";
+
+if (file_exists($outManifestDir) && !_rmrf($outManifestDir, TRUE)) {
+    _error("Error when recursively deleting output folder at %s", $outManifestDir);
+    exit(1);
+}
+if (!_mkdir($outManifestDir)) {
+    _error("Could not create D10 output directory at %s", $outManifestDir);
+    exit(1);
+}
+
+_log('==> Taking D10 site inventory..');
+
+$types = json_decode(implode('', _exec($drupalRoot, "$drushCmd php:script d10-list-types.php --script-path=.migraine-scripts")), TRUE);
+
+if (empty($types)) {
+    _error("Failed to list D10 types.");
+    exit(1);
+}
+
+$processFieldRow = function ($fieldRow) {
+    $allowedValues = !empty($fieldRow['allowed_values'])
+        ? 'values: ' . implode(',', array_keys($fieldRow['allowed_values']))
+        : NULL;
+    $target_type = !empty($fieldRow['handler'])
+        ? substr(strrchr($fieldRow['handler'], ':'), 1)
+        : NULL;
+    $target_bundles = !empty($fieldRow['target_bundles'])
+        ? implode(',', $fieldRow['target_bundles'])
+        : NULL;
+    $target = !isset($target_type) ? NULL
+        : $target_type . (!isset($target_bundles) ? ''
+            : ': ' . $target_bundles);
+
+    $typeExtra = implode('; ', array_filter([$allowedValues, $target]));
+
+    unset($fieldRow['allowed_values']);
+    unset($fieldRow['handler']);
+    unset($fieldRow['target_bundles']);
+
+    $fieldRow['field_type'] .= (!empty($typeExtra) ? ' (' . $typeExtra . ')' : '');
+
+    if ($fieldRow['cardinality'] == -1) {
+        $fieldRow['cardinality'] = 'Unlimited';
+    }
+
+    return $fieldRow;
+};
+
+$typesIndex = [];
+$fieldsIndex = [];
+
+foreach ($types as $entityTypeId => $bundles) {
+    $typesIndex += [$entityTypeId => []];
+    $fieldsIndex += [$entityTypeId => []];
+
+    $baseFields = json_decode(implode('', _exec($drupalRoot, "$drushCmd field:base-info $entityTypeId --format=json --fields=field_name,field_type,cardinality,allowed_values,handler,target_bundles")), TRUE);
+
+    if (!is_array($baseFields)) {
+        _error("Failed to list D10 base fields.");
+        exit(1);
+    }
+
+    foreach ($bundles as $bundleId) {
+        $bundleFields = json_decode(implode('', _exec($drupalRoot, "$drushCmd field:info $entityTypeId $bundleId --format=json --fields=field_name,field_type,cardinality,allowed_values,handler,target_bundles")), TRUE);
+
+        if (!is_array($bundleFields)) {
+            _error("Failed to list D10 bundle fields.");
+            exit(1);
+        }
+
+        $fields = array_map($processFieldRow, $baseFields + $bundleFields);
+
+        $typesIndex[$entityTypeId][$bundleId] = $bundleId;
+        $fieldsIndex[$entityTypeId][$bundleId] = $fields;
+
+        if (empty($fields)) {
+            continue;
+        }
+        $table = new TextTable([
+            'field_name' => 'D10 Field',
+            'field_type' => 'D10 Type',
+            'cardinality' => 'D10 Cardinality',
+        ], $fields);
+
+        $outputFile = "$outManifestDir/$entityTypeId.$bundleId.d10.txt";
+
+        _log('Writing %s..', $outputFile);
+        file_put_contents($outputFile, $table->render());
+    }
+}
+
+_log('Writing %s..', "$outManifestDir/types.json");
+file_put_contents("$outManifestDir/types.json", json_encode($typesIndex, JSON_PRETTY_PRINT));
+
+_log('Writing %s..', "$outManifestDir/fields.json");
+file_put_contents("$outManifestDir/fields.json", json_encode($fieldsIndex));

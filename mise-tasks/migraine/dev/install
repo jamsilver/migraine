@@ -3,7 +3,7 @@
 
 set -e
 
-source "$MISE_TASK_DIR/includes/helpers.sh"
+source "$MISE_TASK_DIR/../.includes/helpers.sh"
 
 cd "$MISE_ORIGINAL_CWD"
 
