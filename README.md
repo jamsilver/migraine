@@ -2,7 +2,13 @@
 
 ![migrAIne logo](migraine.jpeg "migrAIne logo")
 
-Helper scripts that use AI to support the process of developing Drupal 7 --> Drupal 10 migrations.
+**Helper scripts that use AI to support the process of developing Drupal 7 → Drupal 10 migrations.**
+
+This project does not, and could never, &ldquo;fully automate&rdquo; the generation of migrations. Instead, it provides a small suite of commands
+("tasks") that reduce the developer burden by combining helper scripts and LLM requests to make it fast to gather information about your sites and
+generate the "first draft yml" of each migration.
+
+The hope is by removing a chunk of the busywork, developers are able to invest their cognitive and creative energies more intelligently. Y'know, have more fun.
 
 ## Installation/requirements
 
@@ -26,7 +32,7 @@ You may choose to exclude the `.migraine` folder via a line in your `.gitignore`
 the repo to collaborate with others on migration planning and AI prompt documents.
 
 
-## The Scripts
+## The Tasks
 
 The examples here are given assuming you're working within your D10 project root.
 
