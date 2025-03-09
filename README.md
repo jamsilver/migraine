@@ -86,7 +86,7 @@ basic mappings should be.
 
 ### 5. Generating the YAML
 
-Recommend using aider for this in architect mode. It's very good at automatically updating files based on LLM feedback.
+Recommend using [aider](https://github.com/Aider-AI/aider) for this in architect mode. It's very good at automatically updating files based on LLM feedback.
 Also, it is _vital_ to have good, representative template migrations you can pass to the AI as an example.
 
 Suggest these steps:
