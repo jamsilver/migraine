@@ -39,7 +39,7 @@ Install everything (see below) and then:
       # Commit.
       # Repeat.
 
-For more details about each command and how you might use it, keep reading.
+For more details about each task and how you might use it, keep reading.
 
 ## Installation/requirements
 
@@ -53,8 +53,6 @@ This tool _invokes_ `llm` and `aider` but does not configure them. It is up to y
 provider, generate API keys, and configure `llm` and `aider`the way you like it. If you like, you can look at 
 [example aider configuration below](#example-aider-configuration). This closely resembles my own set-up, so should work
 well with migraine.
-
-I've only tested on macOS, but all the scripts are bash and php, so they should be quite portable.
 
 
 ## The Set Up
@@ -88,7 +86,7 @@ Export entity type and field information about a Drupal 10 site to `.migraine/d1
 
 #### Non-ddev drush support
 
-These scripts need to invoke drush in the context of the given site. They do this by `cd`-ing to the path you provide and exec-ing `ddev drush`. If you don't use ddev, this will not work. You must override the drush command-string with one that works via the `--drush` command-line option. For example:
+This task needs to invoke drush in the context of the given site. They do this by `cd`-ing to the path you provide and exec-ing `ddev drush`. If you don't use ddev, this will not work. You must override the drush command-string with one that works via the `--drush` command-line option. For example:
 
     mise run migraine:inventory:d7 /path/to/d7 --drush "php vendor/bin/drush"
 
@@ -139,7 +137,7 @@ basic mappings should be.
 
 ### 5. Generate the yml file for a migration
 
-This command passes your carefully-crafted prompt file to `aider` to generate a migration yml. For example:
+This task passes your carefully-crafted prompt file to `aider` to generate a migration yml. For example:
 
     mise run migraine:aider:migrate node_article
 
