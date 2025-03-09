@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-//MISE description="Create prompt(s) migrations listed in .migraine/migrations.json."
+//MISE description="Create prompt(s) for migrations listed in .migraine/migrations.json."
 //USAGE flag "-s --source <source>" help="The type of source drupal" default="d7" {
 //USAGE   choices "d7" "d10"
 //USAGE }

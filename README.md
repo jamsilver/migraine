@@ -1,17 +1,16 @@
-# Drupal MigrAIne
+# Drupal migrAIne
 
-Helper scripts for using AI to speed up the process of writing D7->D10 Drupal migrations. There
-are two parts to this repo:
+![migrAIne logo](migraine.jpeg "migrAIne logo")
 
- - The helper scripts (in `mise-tasks`) defined as [Mise-en-place tasks](https://mise.jdx.dev/tasks/).
- - A couple simple ddev D7 and D10 sites for testing and development.
+Helper scripts to support the process of developing Drupal 7 --> Drupal 10 migrations.
 
 ## Installation/requirements
 
  - [install Mise](https://mise.jdx.dev/getting-started.html)
- - Download/copy the contents of mise-tasks into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks`, or wherever makes sense for your situation. See https://mise.jdx.dev/tasks/ for more details.
+ - Download the contents of the `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks`, or wherever makes sense for your situation. See https://mise.jdx.dev/tasks/ for more details.
  - Install PHP version 8 (some scripts use PHP)
- - Install [llm](https://github.com/simonw/llm), configure it with a key of your choice (recommend openai).
+ - Install [llm](https://github.com/simonw/llm) and set up key(s) of your choice to unlock `migraine:llm:*` tasks.
+ - Install [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks
 
 ## The Set Up
 
