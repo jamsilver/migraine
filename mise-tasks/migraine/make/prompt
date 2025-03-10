@@ -24,7 +24,7 @@ $sourceEnvType = getenv('usage_source') ?? 'd7';
 $destEnvType = getenv('usage_dest') ?? 'd10';
 $force = getenv('usage_force') === 'true';
 
-require_once "$taskDir/../.includes/helpers.php";
+require_once "$taskDir/../.includes/vendor/autoload.php";
 
 $resolvePath = _make_path_resolver($projectRoot);
 

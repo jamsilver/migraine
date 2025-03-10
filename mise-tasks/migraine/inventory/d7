@@ -13,8 +13,7 @@ $drupalRoot = $argv[1];
 $outDir = $argv[2] ?? '.migraine';
 $drushCmd = getenv('usage_drush');
 
-require_once "$taskDir/../.includes/helpers.php";
-require_once "$taskDir/../.includes/TextTable.php";
+require_once "$taskDir/../.includes/vendor/autoload.php";
 
 $resolvePath = _make_path_resolver($projectRoot);
 

@@ -1,0 +1,22 @@
+{
+    "scripts": {
+        "post-install-cmd": "MigraineComposerScripts\\ComposerScripts::copyVendor",
+        "post-update-cmd": "MigraineComposerScripts\\ComposerScripts::copyVendor"
+    },
+    "autoload": {
+        "psr-4": {
+            "MigraineComposerScripts\\": "scripts",
+            "Migraine\\": "src"
+        },
+        "files": [
+            "helpers.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "classmap-authoritative": true
+    },
+    "require": {
+        "symfony/yaml": "^7.2"
+    }
+}

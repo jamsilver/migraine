@@ -40,7 +40,7 @@ function _rmrf(string $path, bool $contentsOnly = FALSE): bool {
             $success = $success && _rmrf($file);
         }
         if (!$contentsOnly) {
-            $success = $success && unlink($path);
+            $success = $success && rmdir($path);
         }
     } elseif (is_file($path)) {
         $success = unlink($path);
