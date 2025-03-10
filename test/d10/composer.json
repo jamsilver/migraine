@@ -23,6 +23,7 @@
         "drupal/devel": "^5.2",
         "drupal/gin": "^4.0",
         "drupal/gin_toolbar": "^2.0",
+        "drupal/migrate_upgrade": "^4.0",
         "drupal/paragraphs": "^1.19",
         "drush/drush": "^13.0"
     },

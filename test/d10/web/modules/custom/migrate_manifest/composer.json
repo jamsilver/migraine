@@ -1,0 +1,41 @@
+{
+  "name": "drupal/migrate_manifest",
+  "description": "Supports the running of migrations using a structured manifest file.",
+  "type": "drupal-module",
+  "license": "GPL-2.0+",
+  "homepage": "https://www.drupal.org/project/migrate_manifest",
+  "authors": [
+    {
+      "name": "James Gilliland",
+      "homepage":"https://www.drupal.org/u/neclimdul",
+      "role": "Maintainer"
+    },
+    {
+      "name": "Andrew Jungklaus",
+      "homepage": "https://www.drupal.org/u/lostkangaroo",
+      "role": "Maintainer"
+    }
+  ],
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/migrate_manifest",
+    "irc": "irc://irc.freenode.org/drupal-migrate",
+    "source": "https://cgit.drupalcode.org/migrate_manifest"
+  },
+  "minimum-stability": "dev",
+  "require": {
+    "drupal/core": "^9.1 || ^10"
+  },
+  "require-dev": {
+    "colinodell/psr-testlogger": "^1.2"
+  },
+  "conflict": {
+    "drush/drush": "<10"
+  },
+  "extra": {
+    "drush": {
+      "services": {
+        "drush.services.yml": "^10"
+      }
+    }
+  }
+}

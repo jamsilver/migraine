@@ -851,15 +851,19 @@ $settings['migrate_node_migrate_type_classic'] = FALSE;
  * $settings['migrate_file_private_path'] = '/var/www/drupal7';
  * @endcode
  */
-# $settings['migrate_source_connection'] = '';
-# $settings['migrate_source_version'] = '';
-# $settings['migrate_file_public_path'] = '';
-# $settings['migrate_file_private_path'] = '';
+$settings['migrate_source_connection'] = 'migrate';
+$settings['migrate_source_version'] = '7';
+$settings['migrate_file_public_path'] = 'https://migraine-drupal7.ddev.site/';
+$settings['migrate_file_private_path'] = '../../d7/files/private';
 
 // Automatically generated include for settings managed by ddev.
 if (getenv('IS_DDEV_PROJECT') == 'true' && file_exists(__DIR__ . '/settings.ddev.php')) {
   include __DIR__ . '/settings.ddev.php';
 }
+
+$databases['migrate']['default'] = $databases['default']['default'];
+$databases['migrate']['default']['host'] = 'ddev-migraine-drupal7-db';
+$databases['migrate']['default']['port'] = 3306;
 
 /**
  * Load local development override configuration, if available.
