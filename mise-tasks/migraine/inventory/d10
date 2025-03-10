@@ -15,6 +15,8 @@ $drushCmd = getenv('usage_drush');
 
 require_once "$taskDir/../.includes/vendor/autoload.php";
 
+$config = Config::forDirectory($outDir);
+
 $resolvePath = _make_path_resolver($projectRoot);
 
 $drupalRoot = $resolvePath($drupalRoot, "Could not find Drupal 10 root at %s");

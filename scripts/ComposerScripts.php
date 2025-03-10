@@ -7,7 +7,7 @@ use function Migraine\_copy;
 use function Migraine\_rmrf;
 
 final class ComposerScripts {
-  public static function copyVendor(Event $event) {
+  public static function postAutoloadDump(Event $event) {
     $migraineTasksDir = realpath(join(DIRECTORY_SEPARATOR, [__DIR__, '..', 'mise-tasks', 'migraine']));
     $helpersPath = realpath(join(DIRECTORY_SEPARATOR, [$migraineTasksDir, '.includes', 'helpers.php']));
 

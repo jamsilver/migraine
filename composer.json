@@ -1,7 +1,6 @@
 {
     "scripts": {
-        "post-install-cmd": "MigraineComposerScripts\\ComposerScripts::copyVendor",
-        "post-update-cmd": "MigraineComposerScripts\\ComposerScripts::copyVendor"
+        "post-autoload-dump": "MigraineComposerScripts\\ComposerScripts::postAutoloadDump"
     },
     "autoload": {
         "psr-4": {
@@ -13,8 +12,7 @@
         ]
     },
     "config": {
-        "optimize-autoloader": true,
-        "classmap-authoritative": true
+        "optimize-autoloader": true
     },
     "require": {
         "symfony/yaml": "^7.2"

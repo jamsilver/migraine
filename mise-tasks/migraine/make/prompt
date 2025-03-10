@@ -26,6 +26,8 @@ $force = getenv('usage_force') === 'true';
 
 require_once "$taskDir/../.includes/vendor/autoload.php";
 
+$config = Config::forDirectory($outDir);
+
 $resolvePath = _make_path_resolver($projectRoot);
 
 $outDir = $resolvePath($outDir, "Could not find, or create, an output directory at %s");
