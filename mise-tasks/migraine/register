@@ -1,0 +1,67 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Register a Drupal site as source or dest."
+//USAGE arg "<targetName>" help="'source' or 'dest'"
+//USAGE arg "<dir>" help="Path to the local Drupal root"
+//USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
+//USAGE flag "-D --delete" help="Pass to unregister the site instead of register."
+
+namespace Migraine;
+
+use Symfony\Component\Filesystem\Path;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$targetName = $argv[1];
+$drupalRootPath = $argv[2];
+$drushCmd = getenv('usage_drush');
+$delete = getenv('usage_delete') === 'true';
+
+require_once "$taskDir/.includes/vendor/autoload.php";
+
+$config = Config::forDirectory($projectRoot);
+
+$targetName = match($targetName) {
+    's', 'source' => 'source',
+    'd', 'dest', 'destination' => 'dest',
+    default => $targetName,
+};
+
+$sites = $config->get('sites', []);
+
+if ($delete) {
+    if (!isset($sites[$targetName])) {
+        _error('Could not find registered site named "%s".', $targetName);
+        exit(1);
+    }
+
+    _log('Unregistered site named "%s".', $targetName);
+    unset($sites[$targetName]);
+    exit;
+}
+
+try {
+  $root = new DrupalRoot($drupalRootPath);
+}
+catch (\Exception $e) {
+  _error($e->getMessage());
+  exit(1);
+}
+
+$drushStatus = _execGetJson($root->getDrupalRoot(), sprintf('%s status --format=json', $drushCmd));
+
+if (!is_array($drushStatus)) {
+    _error('Error executing % status in %s: %s', $drushCmd, $root->getDrupalRoot(), $drushStatus);
+}
+
+$sites[$targetName]['drupalVersion'] = $drushStatus['drupal-version'] ?? $root->getMajorDrupalVersion();
+$sites[$targetName]['path'] = Path::makeRelative($root->getDrupalRoot(), getcwd());
+$sites[$targetName]['inventoried'] = false;
+krsort($sites);
+
+_log(
+    'Registered %s Drupal %d root at %s.',
+    $targetName, $root->getMajorDrupalVersion(), $root->getDrupalRoot(),
+);
+
+$config->set('sites', $sites);

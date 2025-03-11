@@ -15,14 +15,31 @@ function _error(string $message, ...$values) {
     fprintf(STDERR, "$message\n", ...$values);
 }
 
-function _exec(string $path, string $command): array {
-    //_error('(cd "%s"; %s)', $path, $command);
+function _execGetJson(string $path, string $command, int|NULL &$resultCode = -1): array|string {
+    $lines = _exec($path, $command, $resultCode);
+
+    if ($resultCode) {
+        return implode('', $lines);
+    }
+
+    return json_decode(implode('', $lines), TRUE);
+}
+
+function _exec(string $path, string $command, int|NULL &$resultCode = -1): array {
+
+    $exitOnError = $resultCode === -1;
+    $resultCode = NULL;
+
+    $lastWorkingDirectory = getcwd();
     chdir($path);
     $result = exec($command, $outputLines, $resultCode);
-    if ($resultCode) {
+    chdir($lastWorkingDirectory);
+
+    if ($resultCode && $exitOnError) {
         _error("Command failed with output %s.", $result);
         exit(1);
     }
+
     return $outputLines;
 }
 
@@ -120,27 +137,6 @@ function _is_windows($os = NULL): bool {
     return strtoupper(substr($os, 0, 3)) === 'WIN';
 }
 
-function _find_drupal_root(string $path, string $type) {
-    foreach ([$path, "$path/web", "$path/docroot", "$path/www"] as $candidateWebroot) {
-        if (_is_drupal_root($candidateWebroot, $type)) {
-            return $candidateWebroot;
-        }
-    }
-    return FALSE;
-}
-
-function _is_drupal_root(string $path, string $type) {
-    $has_index_php = is_dir($path) && is_file("$path/index.php");
-    switch ($type) {
-        case 'd10':
-            return $has_index_php && is_dir("$path/core");
-        case 'd7':
-            return $has_index_php && !is_dir("$path/core");
-        default:
-            throw new \Exception(sprintf('Unexpected drupal type %s', $type));
-    }
-}
-
 function _make_path_resolver(string $projectRoot) {
     return function ($path, $message, $autocreate = FALSE) use ($projectRoot) {
         if ($path[0] !== DIRECTORY_SEPARATOR) {
@@ -157,9 +153,7 @@ function _make_path_resolver(string $projectRoot) {
     };
 }
 
-function _move_migraine_scripts_to_site(string $drupalRoot, string $type) {
-    $drupalRoot = _find_drupal_root($drupalRoot, $type);
-
+function _move_migraine_scripts_to_site(string $drupalRoot) {
     $drushScriptsPath = "$drupalRoot/.migraine-scripts";
 
     if (!is_dir($drushScriptsPath) && !_mkdir($drushScriptsPath)) {
@@ -232,4 +226,105 @@ function _validateMigrations(array $migrations, string $sourceEnvType, array $so
         }
     }
     return $success;
+}
+
+function _drupal_major_versions_match(string $version1, string $version2) {
+    [$major1] = explode('.', $version1, 1);
+    [$major2] = explode('.', $version1, 1);
+    return $major1 !== NULL && $major1 === $major2;
+}
+
+function _format_time_diff_since($timestamp, $granularity = 2) {
+    return _format_date_diff($timestamp, time(), $granularity);
+}
+
+/**
+ * Adapted from Drupal\Core\Datetime\DateFormatter::formatDiff().
+ */
+function _format_date_diff($from, $to, $granularity = 2): string {
+    if ($from > $to) {
+        return '0 seconds';
+    }
+
+    $date_time_from = new \DateTime();
+    $date_time_from->setTimestamp($from);
+
+    $date_time_to = new \DateTime();
+    $date_time_to->setTimestamp($to);
+
+    $interval = $date_time_to->diff($date_time_from);
+
+    $output = '';
+
+    // We loop over the keys provided by \DateInterval explicitly. Since we
+    // don't take the "invert" property into account, the resulting output value
+    // will always be positive.
+    $max_age = 1e99;
+    foreach (['y', 'm', 'd', 'h', 'i', 's'] as $value) {
+        if ($interval->$value > 0) {
+            switch ($value) {
+                case 'y':
+                    $interval_output = $interval->y . ($interval->y === 1 ? ' year' : ' years');
+                    $max_age = min($max_age, 365 * 86400);
+                    break;
+
+                case 'm':
+                    $interval_output = $interval->m . ($interval->m === 1 ? ' month' : ' months');
+                    $max_age = min($max_age, 30 * 86400);
+                    break;
+
+                case 'd':
+                    // \DateInterval doesn't support weeks, so we need to calculate them
+                    // ourselves.
+                    $interval_output = '';
+                    $days = $interval->d;
+                    $weeks = floor($days / 7);
+                    if ($weeks) {
+                        $interval_output = $weeks . ($weeks == 1 ? ' week' : ' weeks');
+                        $days -= $weeks * 7;
+                        $granularity--;
+                        $max_age = min($max_age, 7 * 86400);
+                    }
+
+                    if ((!$output || $weeks > 0) && $granularity > 0 && $days > 0) {
+                        $interval_output = ($interval_output ? ' ' : '') . $days . ($days == 1 ? ' day' : ' days');
+                        $max_age = min($max_age, 86400);
+                    }
+                    else {
+                        // If we did not output days, set the granularity to 0 so that we
+                        // will not output hours and get things like "@count week @count hour".
+                        $granularity = 0;
+                    }
+                    break;
+
+                case 'h':
+                    $interval_output = $interval->h . ($interval->h == 1 ? ' hour' : ' hours');
+                    $max_age = min($max_age, 3600);
+                    break;
+
+                case 'i':
+                    $interval_output = $interval->i . ($interval->i == 1 ? ' minute' : ' minutes');
+                    $max_age = min($max_age, 60);
+                    break;
+
+                case 's':
+                    $interval_output = $interval->s . ($interval->s == 1 ? ' second' : ' seconds');
+                    $max_age = min($max_age, 1);
+                    break;
+            }
+            $output .= ($output && $interval_output ? ' ' : '') . $interval_output;
+            $granularity--;
+        }
+        elseif ($output) {
+            // Break if there was previous output but not any output at this level,
+            // to avoid skipping levels and getting output like "@count year @count second".
+            break;
+        }
+
+        if ($granularity <= 0) {
+            break;
+        }
+    }
+
+    return empty($output) ? '0 seconds' : $output;
 }

@@ -1,0 +1,119 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Take a site inventory."
+//USAGE arg "<target>" help="The site to take inventory of." default="source" {
+//USAGE   choices "s" "source" "d" "dest" "destination"
+//USAGE }
+//USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
+
+namespace Migraine;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$siteName = $argv[1];
+$drushCmd = getenv('usage_drush');
+
+require_once "$taskDir/.includes/vendor/autoload.php";
+
+$config = Config::forDirectory($projectRoot);
+
+$siteName = match($siteName) {
+  's', 'src', 'source' => 'source',
+  'd', 'dest', 'destination' => 'dest',
+  default => $siteName,
+};
+
+$sites = $config->get('sites');
+
+if (!$sites || !isset($sites[$siteName]) || !isset($sites[$siteName]['drupalVersion']) || !isset($sites[$siteName]['path'])) {
+  _error('No %s site found. Run: migraine:register %s', $siteName, $siteName);
+  exit(1);
+}
+
+try {
+  $drupalRoot = new DrupalRoot($sites[$siteName]['path']);
+
+  if (!_drupal_major_versions_match($drupalRoot->getMajorDrupalVersion(), $sites[$siteName]['drupalVersion'])) {
+    _error(
+      'Site has changed Drupal version. Re-run: migraine:register %s %s',
+      $sites[$siteName]['path'], $siteName, $sites[$siteName]['path'],
+    );
+    exit(1);
+  }
+}
+catch (\Exception $e) {
+  _error($e->getMessage());
+  exit(1);
+}
+
+_log('==> Moving migraine scripts to %s..', $drupalRoot->getDrupalRoot());
+
+_move_migraine_scripts_to_site($drupalRoot->getDrupalRoot());
+
+_exec($drupalRoot->getDrupalRoot(), sprintf(
+  '%s %s',
+  $drushCmd,
+  $drupalRoot->getMajorDrupalVersion() >= 8 ? 'cache:rebuild' : 'cache-clear drush',
+));
+
+$outManifestDir = $config->projectRoot . '/' . ConfigBase::MIGRAINE_DIRECTORY . '/inventory/' . $siteName;
+
+if (file_exists($outManifestDir) && !_rmrf($outManifestDir, TRUE)) {
+    _error("Error when recursively deleting output folder at %s", $outManifestDir);
+    exit(1);
+}
+
+if (!_mkdir($outManifestDir)) {
+    _error("Could not create source output directory at %s", $outManifestDir);
+    exit(1);
+}
+
+_log('==> Taking Drupal %d site inventory..', $drupalRoot->getMajorDrupalVersion());
+
+$types = _execGetJson(
+  $drupalRoot->getDrupalRoot(),
+  sprintf(
+    '%s php:script d%d-list-types.php --script-path=.migraine-scripts',
+    $drushCmd, $drupalRoot->getMajorDrupalVersion() >= 8 ? 10 : 7,
+  ),
+);
+
+if (!is_array($types)) {
+    _error("Failed to list Drupal %d types.", $drupalRoot->getMajorDrupalVersion());
+    exit(1);
+}
+
+$typesIndex = [];
+$fieldsIndex = [];
+
+foreach ($types as $entityTypeId => $bundles) {
+    $typesIndex += [$entityTypeId => []];
+    $fieldsIndex += [$entityTypeId => []];
+
+    foreach (array_keys($bundles) as $bundleId) {
+        $fields = _execGetJson(
+          $drupalRoot->getDrupalRoot(),
+          sprintf(
+            "%s php:script d%d-list-bundle-fields.php --script-path=.migraine-scripts -- %s %s",
+            $drushCmd, $drupalRoot->getMajorDrupalVersion() >= 8 ? 10 : 7, $entityTypeId, $bundleId,
+          ),
+        );
+
+        if (!is_array($fields)) {
+            _error("Failed to list fields.");
+            exit(1);
+        }
+
+        $typesIndex[$entityTypeId][$bundleId] = $bundleId;
+        $fieldsIndex[$entityTypeId][$bundleId] = $fields;
+    }
+}
+
+_log('Writing %s..', "$outManifestDir/types.json");
+file_put_contents("$outManifestDir/types.json", json_encode($typesIndex, JSON_PRETTY_PRINT));
+
+_log('Writing %s..', "$outManifestDir/fields.json");
+file_put_contents("$outManifestDir/fields.json", json_encode($fieldsIndex, JSON_PRETTY_PRINT));
+
+$sites[$siteName]['inventoried'] = time();
+$config->set('sites', $sites);

@@ -47,23 +47,18 @@ $fields = [];
 foreach ($fieldInstances as $fieldName => $instanceInfo) {
     $fieldInfo = field_info_field($fieldName);
 
-    $allowedValues = strpos($fieldInfo['type'], 'list') !== FALSE && (isset($fieldInfo['settings']['allowed_values']) || isset($fieldInfo['settings']['allowed_values_function'])) && function_exists('list_allowed_values')
-        ? 'values: ' . implode(', ', array_keys(@list_allowed_values($fieldInfo, $instanceInfo, $entityTypeID)))
-        : NULL;
-
-    $reference_target = !isset($fieldInfo['settings']['target_type'])
-        ? ($fieldInfo['type'] !== 'taxonomy_term_reference' ? NULL
-            : (!isset($fieldInfo["settings"]["allowed_values"][0]["vocabulary"]) ? ''
-                : $fieldInfo["settings"]["allowed_values"][0]["vocabulary"]))
-        : $fieldInfo['settings']['target_type'] . (!isset($fieldInfo['settings']['handler_settings']['target_bundles']) ? ''
-            : ': ' . implode(',', $fieldInfo['settings']['handler_settings']['target_bundles']));
-
-    $typeExtra = implode('; ', array_filter([$allowedValues, $reference_target]));
-
     $fields[] = [
-        'name' => $fieldName,
-        'field_type' => $fieldInfo['type'] . (!empty($typeExtra) ? ' (' . $typeExtra . ')' : ''),
-        'cardinality' => !isset($fieldInfo['cardinality']) ? null : ($fieldInfo['cardinality'] == -1 ? 'Unlimited' : $fieldInfo['cardinality']),
+        'field_name' => $fieldName,
+        'field_type' => $fieldInfo['type'],
+        'cardinality' => $fieldInfo['cardinality'],
+        'allowed_values' => strpos($fieldInfo['type'], 'list') !== FALSE && (isset($fieldInfo['settings']['allowed_values']) || isset($fieldInfo['settings']['allowed_values_function'])) && function_exists('list_allowed_values')
+            ? array_keys(@list_allowed_values($fieldInfo, $instanceInfo, $entityTypeID))
+            : NULL,
+        'reference_target_type' => $fieldInfo['type'] === 'taxonomy_term_reference' ? 'taxonomy_term'
+            : ($fieldInfo['settings']['target_type'] ?? NULL),
+        'reference_target_bundles' => $fieldInfo['type'] === 'taxonomy_term_reference'
+            ? (isset($fieldInfo["settings"]["allowed_values"][0]["vocabulary"]) ? [$fieldInfo["settings"]["allowed_values"][0]["vocabulary"]] : NULL)
+            : ($fieldInfo['settings']['handler_settings']['target_bundles'] ?? NULL)
     ];
 }
 

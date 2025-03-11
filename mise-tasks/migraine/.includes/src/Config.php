@@ -7,7 +7,7 @@ namespace Migraine;
  */
 final class Config extends ConfigBase {
 
-  protected static function makeFileName(string $directoryPath): string {
+  protected static function makeFilePath(string $directoryPath): string {
     return join(
       DIRECTORY_SEPARATOR,
       [$directoryPath, 'config.yml'],
