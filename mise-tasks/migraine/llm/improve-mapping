@@ -2,12 +2,6 @@
 set -e
 
 #MISE description="Uses AI to improves the Field mapping portion of an existing migrations prompt."
-#USAGE flag "-s --source <source>" help="The type of source drupal" default="d7" {
-#USAGE   choices "d7" "d10"
-#USAGE }
-#USAGE flag "-d --dest <dest>" help="The type of destination drupal" default="d10" {
-#USAGE   choices "d10" "d7"
-#USAGE }
 #USAGE flag "-m --model <model>" help="The LLM model to use" default="o1"
 #USAGE arg "<migration_id>" help="The ID of the migration to guess the mapping for"
 
@@ -15,25 +9,34 @@ source "$MISE_TASK_DIR/../.includes/helpers.sh"
 
 cd "$MISE_ORIGINAL_CWD"
 
-OUT_DIR="${usage_dir:-.migraine}"
-SOURCE_TYPE="${usage_source:-d7}"
-DEST_TYPE="${usage_dest:-d10}"
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  cd "$(git rev-parse --show-toplevel)"
+fi
+
 MODEL="${usage_model:-o1}"
 MIGRATION_ID="$usage_migration_id"
 
-if [ ! -d "$OUT_DIR" ] ; then
-  echo "Migraine directory $OUT_DIR does not exist or is not a directory. Have you run migraine:inventory?" >&2
+if [ ! -d ".migraine" ] ; then
+  echo "Migraine directory .migraine does not exist or is not a directory. Have you run migraine:inventory?" >&2
   exit 1
 fi
 
-if [ ! -d "$OUT_DIR/prompts" ] || [ ! -r "$OUT_DIR/prompts/$MIGRATION_ID.md" ] ; then
-  echo "Could not find $OUT_DIR/prompts/$MIGRATION_ID.md. Have you run migraine:make:prompt?" >&2
+if [ ! -d ".migraine/prompts" ] || [ ! -r ".migraine/prompts/$MIGRATION_ID.md" ] ; then
+  echo "Could not find .migraine/prompts/$MIGRATION_ID.md. Have you run migraine:make-prompt?" >&2
+  exit 1
+fi
+
+SOURCE_VERSION=$(php "$MISE_TASK_DIR/../.includes/get-config.php" sites source drupalVersion 2>/dev/null)
+DEST_VERSION=$(php "$MISE_TASK_DIR/../.includes/get-config.php" sites dest drupalVersion 2>/dev/null)
+
+if [ -z "$SOURCE_VERSION" ] || [ -z "$DEST_VERSION" ]; then
+  echo "Failed to parse .migraine/migraine.yml. Fix syntax issues." >&2
   exit 1
 fi
 
 PROMPT=$(
 cat <<- END_HEREDOC
-You are an expert Drupal developer assisting with the planning and execution of a $SOURCE_TYPE to $DEST_TYPE migration.
+You are an expert Drupal developer assisting with the planning and execution of a Drupal $SOURCE_VERSION to Drupal $DEST_VERSION migration.
 You are also an expert at preparing instructions for other, less intelligent, AIs. I have a document here that
 describes an individual migration I want another LLM to generate for me. Your task is to improve this document to make
 it most effective for the other LLM. In particular I want you to rewrite the "## Field mapping" section to give it more
@@ -48,7 +51,7 @@ unless the developer has noted something special is happening with them.
 
 Here is the current version of the document:
 
-$(cat "$OUT_DIR/prompts/$MIGRATION_ID.md")
+$(cat ".migraine/prompts/$MIGRATION_ID.md")
 
 OUTPUT FORMAT
 
@@ -57,7 +60,7 @@ You MUST output ONLY the rewritten ## Field mapping section with no additional c
 END_HEREDOC
 )
 
-echo "==> Asking MAIN LLM to generate improved Field mapping for $OUT_DIR/prompts/$MIGRATION_ID.md ==>" >&2
+echo "==> Asking MAIN LLM to generate improved Field mapping for .migraine/prompts/$MIGRATION_ID.md ==>" >&2
 echo 'echo "$PROMPT" | llm prompt --model "'"$MODEL"'"' >&2
 NEW_FIELD_MAPPING=$(echo "$PROMPT" | llm prompt --model "$MODEL")
 

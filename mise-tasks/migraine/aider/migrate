@@ -9,27 +9,34 @@ source "$MISE_TASK_DIR/../.includes/helpers.sh"
 
 cd "$MISE_ORIGINAL_CWD"
 
-OUT_DIR="${usage_dir:-.migraine}"
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  cd "$(git rev-parse --show-toplevel)"
+fi
+
 FORCE="${usage_force:-false}"
 MIGRATION_ID="$usage_migration_id"
 
-if [ ! -d "$OUT_DIR" ] ; then
-  echo "Migraine directory $OUT_DIR does not exist or is not a directory. Have you run migraine:inventory?" >&2
+if [ ! -d ".migraine" ] ; then
+  echo "Migraine directory .migraine does not exist or is not a directory. Have you run migraine:inventory?" >&2
   exit 1
 fi
 
-if [ ! -d "$OUT_DIR/prompts" ] || [ ! -r "$OUT_DIR/prompts/$MIGRATION_ID.md" ] ; then
-  echo "Could not find $OUT_DIR/prompts/$MIGRATION_ID.md. Have you run migraine:make:prompt?" >&2
+if [ ! -d ".migraine/prompts" ] || [ ! -r ".migraine/prompts/$MIGRATION_ID.md" ] ; then
+  echo "Could not find .migraine/prompts/$MIGRATION_ID.md. Have you run migraine:make-prompt?" >&2
   exit 1
 fi
 
-if [ ! -d "$OUT_DIR/template_migrations" ]; then
-  mkdir "$OUT_DIR/template_migrations"
+if [ ! -d ".migraine/templates" ]; then
+  mkdir ".migraine/templates"
 fi
 
-if [ ! "$FORCE" == "true" ] && [ -z "$(find "$OUT_DIR/template_migrations" -maxdepth 1 -name "*.yml" -type f -print -quit)" ]; then
+if [ ! -d ".migraine/templates/migrations" ]; then
+  mkdir ".migraine/templates/migrations"
+fi
+
+if [ ! "$FORCE" == "true" ] && [ -z "$(find ".migraine/templates/migrations" -maxdepth 1 -name "*.yml" -type f -print -quit)" ]; then
   echo "" >&2
-  echo "  [WARNING] There are no yml files in "$OUT_DIR/template_migrations". You will see greatly improved" >&2
+  echo "  [WARNING] There are no yml files in ".migraine/templates/migrations". You will see greatly improved" >&2
   echo "  results if you copy some example migrations into this folder. Why not copy some from Drupal 10"  >&2
   echo "  core locations such as:" >&2
   echo "    - core/modules/node/migrations/" >&2
@@ -42,6 +49,6 @@ fi
 
 run aider \
   --map-tokens=0 \
-  --read="$OUT_DIR/prompts/$MIGRATION_ID.md" \
-  --read="$OUT_DIR/template_migrations" \
-  --message="Read $OUT_DIR/prompts/$MIGRATION_ID.md and follow all instructions."
+  --read=".migraine/prompts/$MIGRATION_ID.md" \
+  --read=".migraine/templates/migrations" \
+  --message="Read .migraine/prompts/$MIGRATION_ID.md and follow all instructions."

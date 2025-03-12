@@ -54,7 +54,7 @@ _exec($drupalRoot->getDrupalRoot(), sprintf(
   $drupalRoot->getMajorDrupalVersion() >= 8 ? 'cache:rebuild' : 'cache-clear drush',
 ));
 
-$outManifestDir = $config->projectRoot . '/' . ConfigBase::MIGRAINE_DIRECTORY . '/inventory/' . $siteName;
+$outManifestDir = $config->getPath(['inventory', $siteName]);
 
 if (file_exists($outManifestDir) && !_rmrf($outManifestDir, TRUE)) {
     _error("Error when recursively deleting output folder at %s", $outManifestDir);

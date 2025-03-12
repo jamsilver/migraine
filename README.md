@@ -30,7 +30,7 @@ Install everything (see below) and then:
       # Hand-fix/tweak .migraine/migrations.json.
 
     # 3. Generate an AI prompt file for each migration.
-    mise run migraine:make:prompt \*
+    mise run migraine:make-prompt \*
 
     # 4. Generate a migration yml file.
     mise run migraine:llm:improve-mapping <MIGRATION_ID>
@@ -47,7 +47,7 @@ For more details about each task and how you might use it, keep reading.
 
  - [Install mise](https://mise.jdx.dev/getting-started.html),
  - Download the contents of this repo's `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks` (see [mise task docs](https://mise.jdx.dev/tasks/) for more information),
- - Install PHP version 8 (some tasks require PHP),
+ - Install PHP version >= 8.2,
  - Install and configure [llm](https://github.com/simonw/llm) to unlock `migraine:llm:*` tasks,
  - Install and configure [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks. Recommend `--architect` mode,
 
@@ -141,13 +141,13 @@ this file by hand before moving on to the next step.
 
 This task iterates over each migration in `.migraine/migrations.json` and generates a suitable markdown file:
 
-    mise run migraine:make:prompt \*
+    mise run migraine:make-prompt \*
 
 You can also generate one at a time:
 
-    mise run migraine:make:prompt node_article
+    mise run migraine:make-prompt node_article
 
-The first time this runs, the template used to generate them is placed in `.migraine/templates/migration-prompt.md`.
+The first time this runs, the template used to generate them is placed in `.migraine/templates/prompts/migration-prompt.md`.
 You are free to update this and re-run.
 
 These prompt files are only a starting point. 
@@ -174,7 +174,7 @@ This task passes your carefully-crafted prompt file to `aider` to generate a mig
     mise run migraine:aider:migrate node_article
 
 For good results it's vital you put high-quality example migrations that exhibit the patterns you wish the AI to use in 
-`.migraine/template_migrations`.
+`.migraine/templates/migrations`.
 
 
 ## Example aider configuration
