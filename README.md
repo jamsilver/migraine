@@ -4,7 +4,7 @@
 
 **Use AI to support the process of developing Drupal → Drupal migrations.**
 
-A small suite of commands ("tasks") that reduce the developer burden involved in information gathering and migration yml 
+A small suite of commands that reduce the developer burden involved in information gathering and migration yml
 creation. LLMs are used where they make sense and good old-fashioned helper scripts are used where they don&apos;t.
 
 This project does not, and could never, &ldquo;fully automate&rdquo; the generation of migrations. Instead, the hope is 
@@ -16,11 +16,13 @@ intelligently. Y&apos;know. Have more fun 🚀 🎉 😀.
 
 Install everything (see below) and then:
 
-    # 1. Gather entity type/field structure data about the source site.
-    mise run migraine:inventory:d7 /path/to/d7
+    # 1. Tell migraine about your source and destination sites.
+    mise run migraine:register source /path/to/d7
+    mise run migraine:register dest .
 
-    # Gather entity type/field structure data about the destination site.
-    mise run migraine:inventory:d10 .
+    # 2. Gather entity type/field structure data about your sites.
+    mise run migraine:inventory source
+    mise run migraine:inventory dest
 
     # 2. Make JSON list of all needed migrations.
     mise run migraine:llm:guess-migrations
@@ -57,9 +59,8 @@ well with migraine.
 
 ## The Set Up
 
-It is assumed you have a working installation of both the Drupal 7 and Drupal 10 site locally on your machine. The 
-sites should be "upped" and functional. You must be able to run Drush commands that require a full bootstrap and
-database connection.
+It is assumed you have a working installation of both Drupal sites locally on your machine. The sites should be "upped"
+and functional. You must be able to run Drush commands that require a full bootstrap and database connection.
 
 These tasks create a `.migraine/` folder in your working directory to store/retrieve (e.g.) site inventory and 
 prompt information. As such, you must remain in the same working directory when running migraine tasks. Most likely this 
@@ -74,24 +75,55 @@ to your repo to collaborate with others on migration planning and AI prompt docu
 The examples here assume your working directory is a [ddev](https://github.com/ddev/ddev) project root of your Drupal 10 site.
 
 
-### 1. Take an inventory of your site
+### 1. Register/unregister sites.
 
-Export entity type and field information about a Drupal 7 site to `.migraine/d7`
+Tells migraine how to find your source and/or destination sites:
 
-    mise run migraine:inventory:d7 /path/to/d7
+    mise run migraine:register source /path/to/site
+    mise run migraine:register dest ../path/to/another/site
 
-Export entity type and field information about a Drupal 10 site to `.migraine/d10`
+Key facts about your sites are stored in `.migraine/migraine.yml`. Migraine does
+some basic validation of the Drupal root and detects the version of Drupal.
 
-    mise run migraine:inventory:d10 .
+Un-register a site by passing a `--delete` or `-D` flag:
+
+    mise run migraine:register source /path/to/site --delete
+
+
+### 2. List all registered sites.
+
+Prints a table of all registered sites, their Drupal version, and status:
+
+    mise run migraine:status
+
+This command also checks drush can be executed against the site, and verifies
+drush can connect to the database.
+
+
+### 3. Take an inventory of your site
+
+Discovers entity type and field information about your source site:
+
+    mise run migraine:inventory source
+
+Discovers entity type and field information about your destination site:
+
+    mise run migraine:inventory dest
+
+This information is stored in JSON files inside `.migraine/inventory`. It is
+used by other commands to use to, e.g., generate prompts.
 
 #### Non-ddev drush support
 
-This task needs to invoke drush in the context of the given site. They do this by `cd`-ing to the path you provide and exec-ing `ddev drush`. If you don't use ddev, this will not work. You must override the drush command-string with one that works via the `--drush` command-line option. For example:
+This task needs to invoke drush in the context of the given site. It does this
+by `cd`-ing to the Drupal webroot and exec-ing `ddev drush`. If you don't use
+ddev, this will not work. You must override the drush command-string with one
+that works via the `--drush` command-line option. For example:
 
-    mise run migraine:inventory:d7 /path/to/d7 --drush "php vendor/bin/drush"
+    mise run migraine:inventory source --drush "php vendor/bin/drush"
 
 
-### 2. Work out what migrations you need
+### 4. Work out what migrations you need
 
 The idea is to have a file `.migraine/migrations.json` that lists all needed migrations.
 
@@ -105,7 +137,7 @@ It's possible invalid JSON will be generated, and of course only you know what t
 this file by hand before moving on to the next step.
 
 
-### 3. Generate an AI prompt file for each migration
+### 5. Generate an AI prompt file for each migration
 
 This task iterates over each migration in `.migraine/migrations.json` and generates a suitable markdown file:
 
@@ -124,7 +156,7 @@ Complete the ## Field mapping section to describe how source files are mapped to
 makes sense to you and is clear and non-ambiguous for LLMs to understand.
 
 
-### 4. Improve the prompt document
+### 6. Improve the prompt document
 
 This task passes an existing prompt document to an LLM to flesh-out the ## Field mapping section:
 
@@ -135,7 +167,7 @@ improve the document, or not. If there are no mappings specified, the AI will tr
 basic mappings should be.
 
 
-### 5. Generate the yml file for a migration
+### 7. Generate the yml file for a migration
 
 This task passes your carefully-crafted prompt file to `aider` to generate a migration yml. For example:
 

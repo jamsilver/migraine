@@ -23,9 +23,9 @@ abstract class ConfigBase {
      * Return an instance of config appropriate for the given directory.
      *
      * If $directoryPath is inside a git repository, this method uses the root
-     * of that git repository instead. This config is backed by a
-     * .migraine/config.yml file in the resolved directory. It is automatically
-     * created if it does not exist.
+     * of that git repository instead. This config is backed by an actual yaml
+     * file stored in a .migraine subfolder of the resolved directory. It is
+     * automatically created if it does not exist.
      *
      * The purpose of all the singleton/static caching in this method is to
      * offer a high degree of protection from finding ourselves in a situation
@@ -153,6 +153,13 @@ abstract class ConfigBase {
         $this->changed = TRUE;
         $this->data[$key] = $value;
         return $this;
+    }
+
+    public function getPath(array $parts = []): string {
+        return implode(
+            DIRECTORY_SEPARATOR,
+            array_merge([$this->projectRoot, static::MIGRAINE_DIRECTORY], $parts),
+        );
     }
 
     abstract protected static function makeFilePath(string $directoryPath): string;

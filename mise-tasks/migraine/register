@@ -21,6 +21,8 @@ require_once "$taskDir/.includes/vendor/autoload.php";
 
 $config = Config::forDirectory($projectRoot);
 
+$resolver = _make_path_resolver($projectRoot);
+
 $targetName = match($targetName) {
     's', 'source' => 'source',
     'd', 'dest', 'destination' => 'dest',
@@ -34,11 +36,15 @@ if ($delete) {
         _error('Could not find registered site named "%s".', $targetName);
         exit(1);
     }
+    unset($sites[$targetName]);
+    $config->set('sites', $sites);
+    _rmrf($config->getPath(['inventory', $targetName]));
 
     _log('Unregistered site named "%s".', $targetName);
-    unset($sites[$targetName]);
     exit;
 }
+
+$drupalRootPath = $resolver($drupalRootPath, 'Could not find a directory at %s.');
 
 try {
   $root = new DrupalRoot($drupalRootPath);

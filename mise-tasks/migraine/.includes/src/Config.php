@@ -3,14 +3,14 @@
 namespace Migraine;
 
 /**
- * Represents and reads and writes .migraine/config.yml data.
+ * Represents and reads and writes .migraine/migraine.yml data.
  */
 final class Config extends ConfigBase {
 
   protected static function makeFilePath(string $directoryPath): string {
     return join(
       DIRECTORY_SEPARATOR,
-      [$directoryPath, 'config.yml'],
+      [$directoryPath, 'migraine.yml'],
     );
   }
 
