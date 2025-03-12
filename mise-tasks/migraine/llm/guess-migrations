@@ -2,52 +2,54 @@
 set -e
 
 #MISE description="Generate migrations list by asking AI to guess."
-#USAGE flag "-s --source <source>" help="The type of source drupal" default="d7" {
-#USAGE   choices "d7" "d10"
-#USAGE }
-#USAGE flag "-d --dest <dest>" help="The type of destination drupal" default="d10" {
-#USAGE   choices "d10" "d7"
-#USAGE }
 #USAGE flag "-m --model <model>" help="The LLM model to use" default="o1"
-#USAGE arg "[dir]" help="Output directory" default=".migraine"
 
 source "$MISE_TASK_DIR/../.includes/helpers.sh"
 
 cd "$MISE_ORIGINAL_CWD"
 
-OUT_DIR="${usage_dir:-.migraine}"
-SOURCE_TYPE="${usage_source:-d7}"
-DEST_TYPE="${usage_dest:-d10}"
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  cd "$(git rev-parse --show-toplevel)"
+fi
+
 MODEL="${usage_model:-o1}"
 
-if [ ! -d "$OUT_DIR" ] ; then
-  echo "Migraine directory $OUT_DIR does not exist or is not a directory. Have you run migraine:inventory?" >&2
+if [ ! -d ".migraine" ] || [ ! -r ".migraine/migraine.yml" ] ; then
+  echo "Could not read .migraine/migraine.yml config. Have you run migraine:register?" >&2
   exit 1
 fi
 
-if [ ! -d "$OUT_DIR/$SOURCE_TYPE" ] || [ ! -r "$OUT_DIR/$SOURCE_TYPE/types.json" ] ; then
-  echo "Could not find $OUT_DIR/$SOURCE_TYPE/types.json. Have you run migraine:inventory:$SOURCE_TYPE?" >&2
+if [ ! -r ".migraine/inventory/source/types.json" ] ; then
+  echo "Could not find .migraine/inventory/source/types.json. Have you run migraine:inventory source?" >&2
   exit 1
 fi
 
-if [ ! -d "$OUT_DIR/$DEST_TYPE" ] || [ ! -r "$OUT_DIR/$DEST_TYPE/types.json" ] ; then
-  echo "Could not find $OUT_DIR/$DEST_TYPE/types.json. Have you run migraine:inventory:$DEST_TYPE?" >&2
+if [ ! -r ".migraine/inventory/dest/types.json" ] ; then
+  echo "Could not find .migraine/inventory/dest/types.json. Have you run migraine:inventory dest?" >&2
+  exit 1
+fi
+
+SOURCE_VERSION=$(php "$MISE_TASK_DIR/../.includes/get-config.php" sites source drupalVersion 2>/dev/null)
+DEST_VERSION=$(php "$MISE_TASK_DIR/../.includes/get-config.php" sites dest drupalVersion 2>/dev/null)
+
+if [ -z "$SOURCE_VERSION" ] || [ -z "$DEST_VERSION" ]; then
+  echo "Failed to parse .migraine/migraine.yml. Fix syntax issues." >&2
   exit 1
 fi
 
 PROMPT=$(
 cat <<- END_HEREDOC
-You are an expert Drupal developer assisting with the planning and execution of a $SOURCE_TYPE to $DEST_TYPE migration.
-Given the following list of entity types/bundles in the source $SOURCE_TYPE and destination $DEST_TYPE sites, please
+You are an expert Drupal developer assisting with the planning and execution of a Drupal $SOURCE_VERSION to Drupal $DEST_VERSION migration.
+Given the following list of entity types/bundles in the source $SOURCE_VERSION and destination $DEST_VERSION sites, please
 suggest what migrations are needed.
 
-$SOURCE_TYPE TYPES/BUNDLES
+SOURCE TYPES/BUNDLES
 
-$(cat "$OUT_DIR/$SOURCE_TYPE/types.json")
+$(cat ".migraine/inventory/source/types.json")
 
-$DEST_TYPE TYPES/BUNDLES
+DESTINATION TYPES/BUNDLES
 
-$(cat "$OUT_DIR/$DEST_TYPE/types.json")
+$(cat ".migraine/inventory/dest/types.json")
 
 OUTPUT FORMAT
 
@@ -66,5 +68,5 @@ END_HEREDOC
 )
 
 echo "==> Asking LLM to generate migrations ==>" >&2
-echo 'echo "$PROMPT" | llm prompt --model "'"$MODEL"'" --extract > '"$OUT_DIR/migrations.json" >&2
-echo "$PROMPT" | llm prompt --model "$MODEL" --extract > "$OUT_DIR/migrations.json"
+echo 'echo "$PROMPT" | llm prompt --model "'"$MODEL"'" --extract > '".migraine/migrations.json" >&2
+echo "$PROMPT" | llm prompt --model "$MODEL" --extract > ".migraine/migrations.json"

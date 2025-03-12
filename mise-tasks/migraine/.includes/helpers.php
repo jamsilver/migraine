@@ -190,7 +190,7 @@ function _move_migraine_files_to_output_dir(string $sourceGlob, string $destDir)
     }
 }
 
-function _validateMigrations(array $migrations, string $sourceEnvType, array $sourceTypes, string $destEnvType, array $destTypes) {
+function _validateMigrations(array $migrations, array $sourceTypes, array $destTypes): bool {
     $success = TRUE;
     foreach ($migrations as $id => $row) {
         if (!is_array($row) || count($row) !== 4) {
@@ -203,16 +203,16 @@ function _validateMigrations(array $migrations, string $sourceEnvType, array $so
 
         if (!is_string($sourceType) || !is_string($sourceBundle) || !isset($sourceTypes[$sourceType][$sourceBundle])) {
             _error(
-                "migrations.json error: Migration %s source '%s.%s' does not match any type found in .migraine/%s/types.json.",
-                $id, $sourceType, $sourceBundle, $sourceEnvType,
+                "migrations.json error: Migration %s source '%s.%s' does not match any type found in .migraine/source/types.json.",
+                $id, $sourceType, $sourceBundle,
             );
             $success = FALSE;
         }
 
         if (!is_string($destType) || !is_string($destBundle) || !isset($destTypes[$destType][$destBundle])) {
             _error(
-                "migrations.json error: Migration %s destination '%s.%s' does not match any type found in .migraine/%s/types.json.",
-                $id, $destType, $destBundle, $destEnvType,
+                "migrations.json error: Migration %s destination '%s.%s' does not match any type found in .migraine/dest/types.json.",
+                $id, $destType, $destBundle,
             );
             $success = FALSE;
         }

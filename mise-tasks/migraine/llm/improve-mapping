@@ -10,7 +10,6 @@ set -e
 #USAGE }
 #USAGE flag "-m --model <model>" help="The LLM model to use" default="o1"
 #USAGE arg "<migration_id>" help="The ID of the migration to guess the mapping for"
-#USAGE arg "[dir]" help="Output directory" default=".migraine"
 
 source "$MISE_TASK_DIR/../.includes/helpers.sh"
 

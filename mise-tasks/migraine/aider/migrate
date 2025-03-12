@@ -4,7 +4,6 @@ set -e
 #MISE description="Starts aider to generate, or update, an actual migration yaml."
 #USAGE flag "-f --force" help="Set this to ignore an empty template_migrations directory"
 #USAGE arg "<migration_id>" help="The ID of the migration to guess the mapping for"
-#USAGE arg "[dir]" help="Output directory" default=".migraine"
 
 source "$MISE_TASK_DIR/../.includes/helpers.sh"
 
