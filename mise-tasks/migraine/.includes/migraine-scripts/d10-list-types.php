@@ -12,24 +12,46 @@ if (php_sapi_name() !== 'cli' || !class_exists('Drupal')) {
 
 $result = [];
 
-foreach (\Drupal::entityTypeManager()->getDefinitions() as $entityTypeId => $entityType) {
+/** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager */
+$entityTypeManager = \Drupal::entityTypeManager();
+
+foreach ($entityTypeManager->getDefinitions() as $entityTypeId => $entityType) {
     if (!$entityType instanceof \Drupal\Core\Entity\ContentEntityTypeInterface) {
         continue;
     }
 
-    $result[$entityTypeId] = [];
+    $storage = $entityTypeManager->getStorage($entityTypeId);
+
+    $isSQLable = $storage instanceof \Drupal\Core\Entity\Sql\SqlEntityStorageInterface;
+
+    $result[$entityTypeId] = [
+        'bundles' => [],
+        'schema' => [
+            'is_sqlable' => $isSQLable,
+            'is_revisionable' => $entityType->isRevisionable(),
+        ],
+    ];
+
+    if ($isSQLable) {
+        $result[$entityTypeId]['schema'] += [
+            'base_table' => $storage->getBaseTable(),
+            'revision_table' => $storage->getRevisionTable(),
+            'data_table' => $storage->getDataTable(),
+            'revision_data_table' => $storage->getRevisionDataTable(),
+        ];
+    }
 
     $bundleEntityTypeId = $entityType->getBundleEntityType();
 
     if (empty($bundleEntityTypeId)) {
-        $result[$entityTypeId] = [$entityTypeId => $entityTypeId];
+        $result[$entityTypeId]['bundles'] = [$entityTypeId => $entityTypeId];
         continue;
     }
 
     $bundleStorage = \Drupal::entityTypeManager()->getStorage($bundleEntityTypeId);
 
     foreach ($bundleStorage->loadMultiple() as $bundle) {
-        $result[$entityTypeId][$bundle->id()] = $bundle->id();
+        $result[$entityTypeId]['bundles'][$bundle->id()] = $bundle->id();
     }
 }
 

@@ -82,13 +82,17 @@ if (!is_array($types)) {
 }
 
 $typesIndex = [];
+$typeSchemas = [];
 $fieldsIndex = [];
+$fieldSchemas = [];
 
-foreach ($types as $entityTypeId => $bundles) {
-    $typesIndex += [$entityTypeId => []];
-    $fieldsIndex += [$entityTypeId => []];
+foreach ($types as $entityTypeId => $info) {
+    $typesIndex[$entityTypeId] = $info['bundles'];
+    $typeSchemas[$entityTypeId] = $info['schema'];
+    $fieldsIndex[$entityTypeId] = [];
+    $fieldSchemas[$entityTypeId] = [];
 
-    foreach (array_keys($bundles) as $bundleId) {
+    foreach (array_keys($info['bundles']) as $bundleId) {
         $fields = _execGetJson(
           $drupalRoot->getDrupalRoot(),
           sprintf(
@@ -102,16 +106,25 @@ foreach ($types as $entityTypeId => $bundles) {
             exit(1);
         }
 
-        $typesIndex[$entityTypeId][$bundleId] = $bundleId;
-        $fieldsIndex[$entityTypeId][$bundleId] = $fields;
+        foreach ($fields as $fieldInfo) {
+            $name = $fieldInfo['info']['field_name'];
+            $fieldsIndex[$entityTypeId][$bundleId][$name] = $fieldInfo['info'];
+            $fieldSchemas[$entityTypeId][$bundleId][$name] = $fieldInfo['schema'];
+        }
     }
 }
 
 _log('Writing %s..', "$outManifestDir/types.json");
 file_put_contents("$outManifestDir/types.json", json_encode($typesIndex, JSON_PRETTY_PRINT));
 
+_log('Writing %s..', "$outManifestDir/types.schema.json");
+file_put_contents("$outManifestDir/types.schema.json", json_encode($typeSchemas, JSON_PRETTY_PRINT));
+
 _log('Writing %s..', "$outManifestDir/fields.json");
 file_put_contents("$outManifestDir/fields.json", json_encode($fieldsIndex, JSON_PRETTY_PRINT));
+
+_log('Writing %s..', "$outManifestDir/fields.schema.json");
+file_put_contents("$outManifestDir/fields.schema.json", json_encode($fieldSchemas, JSON_PRETTY_PRINT));
 
 $sites[$siteName]['inventoried'] = time();
 $config->set('sites', $sites);

@@ -47,7 +47,7 @@ $fields = [];
 foreach ($fieldInstances as $fieldName => $instanceInfo) {
     $fieldInfo = field_info_field($fieldName);
 
-    $fields[] = [
+    $info = [
         'field_name' => $fieldName,
         'field_type' => $fieldInfo['type'],
         'cardinality' => $fieldInfo['cardinality'],
@@ -60,6 +60,40 @@ foreach ($fieldInstances as $fieldName => $instanceInfo) {
             ? (isset($fieldInfo["settings"]["allowed_values"][0]["vocabulary"]) ? [$fieldInfo["settings"]["allowed_values"][0]["vocabulary"]] : NULL)
             : ($fieldInfo['settings']['handler_settings']['target_bundles'] ?? NULL)
     ];
+
+    $isDeleted = (bool) $fieldInfo['deleted'] ?? FALSE;
+
+    $isSQLable = $fieldInfo['storage']['module'] === 'field_sql_storage'
+        && $fieldInfo['storage']['type'] === 'field_sql_storage'
+        && !$isDeleted;
+
+    $schema = [
+        'is_sqlable' => $isSQLable,
+        'is_deleted' => $isDeleted,
+        'is_translatable' => (bool) ($fieldInfo['translatable'] ?? FALSE),
+        'is_revisionable' => TRUE,
+        'keys' => [
+            'langcode' => 'language',
+        ],
+        'extra_join_conditions' => [
+            'entity_type' => $entityTypeID,
+        ],
+    ];
+
+    if ($isSQLable) {
+        $schema['columns'] = [];
+        foreach (array_keys($fieldInfo['columns']) as $column_name) {
+            $schema['columns'][$column_name] = _field_sql_storage_columnname($fieldName, $column_name);
+        }
+        $schema['is_shared'] = FALSE;
+        $schema['data_table'] = _field_sql_storage_tablename($fieldInfo);
+        $schema['revision_table'] = _field_sql_storage_revision_tablename($fieldInfo);
+    }
+
+    $fields[] = [
+        'info' => $info,
+        'schema' => $schema,
+    ];
 }
 
-return json_encode($fields);
+return json_encode($fields, JSON_PRETTY_PRINT);

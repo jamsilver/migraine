@@ -23,9 +23,13 @@ if (!isset($extra[1]) || !is_string($extra[1]) || strlen($extra[1]) === 0 || !pr
 $entityTypeID = $extra[0];
 $bundle = $extra[1];
 
+/** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager */
 $entityTypeManager = \Drupal::entityTypeManager();
+/** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
 $entityFieldManager = \Drupal::service('entity_field.manager');
+/** @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entityTypeBundleInfo */
 $entityTypeBundleInfo = \Drupal::service('entity_type.bundle.info');
+/** @var \Drupal\Core\Entity\EntityRepositoryInterface $entityRepository */
 $entityRepository = \Drupal::service('entity.repository');
 
 // Validation.
@@ -43,6 +47,8 @@ if (!isset($bundles[$bundle])) {
     fprintf(STDERR, 'Unrecognised bundle "%s.%s".' . "\n", $entityTypeID, $bundle);
     exit(1);
 }
+
+$entityStorage = $entityTypeManager->getStorage($entityTypeID);
 
 // Get field definitions for the bundle
 $fieldDefinitions = $entityFieldManager->getFieldDefinitions($entityTypeID, $bundle);
@@ -63,7 +69,7 @@ foreach ($fieldDefinitions as $fieldName => $field) {
     $storage = $field->getFieldStorageDefinition();
     $handlerSettings = $field->getSetting('handler_settings');
 
-    $fields[] = [
+    $info = [
         'field_name' => $field->getName(),
         'field_type' => $field->getType(),
         'cardinality' => $storage->getCardinality(),
@@ -81,6 +87,43 @@ foreach ($fieldDefinitions as $fieldName => $field) {
                 'file' => 'file',
                 default => NULL,
             },
+    ];
+
+    $isSQLable = $entityStorage instanceof \Drupal\Core\Entity\Sql\SqlEntityStorageInterface
+        && !$storage->hasCustomStorage()
+        && !$storage->isDeleted();
+
+    $schema = [
+        'is_sqlable' => $isSQLable,
+        'is_deleted' => $storage->isDeleted(),
+        'is_translatable' => $storage->isTranslatable(),
+        'is_revisionable' => $storage->isRevisionable(),
+        'keys' => [
+            'langcode' => 'langcode',
+        ],
+        'extra_join_conditions' => [],
+    ];
+
+    if ($isSQLable) {
+        $mapping = $entityStorage->getTableMapping();
+        $schema['columns'] = [];
+        foreach ($storage->getColumns() as $column_name => $data) {
+            $schema['columns'][$column_name] = $mapping->getFieldColumnName($storage, $column_name);
+        }
+        if ($mapping->requiresDedicatedTableStorage($storage)) {
+            $schema['is_shared'] = FALSE;
+            $schema['data_table'] = $mapping->getDedicatedDataTableName($storage, $storage->isDeleted());
+            $schema['revision_table'] = !$entityType->isRevisionable() ? NULL : $mapping->getDedicatedRevisionTableName($storage, $storage->isDeleted());
+        } elseif ($mapping->allowsSharedTableStorage($storage)) {
+            $schema['is_shared'] = TRUE;
+            $schema['data_table'] = $mapping->getFieldTableName($fieldName);
+            $schema['revision_table'] = $mapping->getRevisionDataTable();
+        }
+    }
+
+    $fields[] = [
+        'info' => $info,
+        'schema' => $schema,
     ];
 }
 
