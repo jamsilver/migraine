@@ -19,6 +19,19 @@ run chmod u+x "$MISE_TASK_DIR/aider/migrate" \
 
 echo "" >&2
 
+TASK_PARENT_DIR="$(dirname $MISE_TASK_DIR)"
+MIG_PATH="$TASK_PARENT_DIR/mig"
+
+if [ ! -r "$MIG_PATH" ]; then
+  echo "==> Adding mig symlink" >&2
+  cd "$TASK_PARENT_DIR"
+  ln -s "$TASK_PARENT_DIR/migraine" "$MIG_PATH"
+fi
+
+if [ -L "$MIG_PATH" ] && [ -r "$MIG_PATH/install" ]; then
+  echo "==> Migraine commands can now also be accessed via mise run mig:" >&2
+fi
+
 if ! command -v aider 2>&1 >/dev/null
 then
     echo "Please install aider to access migraine:aider:* tasks:" >&2
@@ -39,5 +52,5 @@ fi
 
 echo "To list all migraine tasks run:" >&2
 echo "" >&2
-echo "    mise tasks ls | grep migraine" >&2
+echo "    mise tasks ls | grep migraine:" >&2
 echo "" >&2

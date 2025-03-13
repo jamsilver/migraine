@@ -1,6 +1,7 @@
 #!/usr/bin/env php
 <?php
 //MISE description="Show status of registered sites."
+//MISE alias="s"
 //USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
 
 namespace Migraine;

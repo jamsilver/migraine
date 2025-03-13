@@ -1,6 +1,7 @@
 #!/usr/bin/env php
 <?php
 //MISE description="Create prompt(s) for migration(s) listed in .migraine/migrations.json."
+//MISE alias="p"
 //USAGE flag "-f --force" help="Specify this and all prompts will be overwritten"
 //USAGE arg "[migrationId]" help="The ID of the migration to generate a prompt for."
 
