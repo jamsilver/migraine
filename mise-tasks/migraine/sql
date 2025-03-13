@@ -1,0 +1,223 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Generate SQL for querying all fields across an entity type."
+//USAGE arg "<targetName>" help="'source' or 'dest'"
+//USAGE arg "<entityTypeId>" help="The entity type to generate SQL for"
+//USAGE arg "<bundleId>" help="The bundle to generate SQL for"
+//USAGE flag "-r --revisions" help="Targets all revisions instead of the latest one only."
+//USAGE flag "-g --group" help="Concatenates multi-valued fields so there is only one row per entity."
+
+namespace Migraine;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$siteName = $argv[1];
+$entityTypeId = $argv[2];
+$bundleId = $argv[3];
+$isRevisions = getenv('usage_revisions') === 'true';
+$isGroup = getenv('usage_group') === 'true';
+
+require_once "$taskDir/.includes/vendor/autoload.php";
+
+$config = Config::forDirectory($projectRoot);
+
+$siteName = match ($siteName) {
+    's', 'src', 'source' => 'source',
+    'd', 'dest', 'destination' => 'dest',
+    default => $siteName,
+};
+
+$sites = $config->get('sites');
+
+if (!$sites || !isset($sites[$siteName]) || !isset($sites[$siteName]['drupalVersion']) || !isset($sites[$siteName]['path'])) {
+    _error('No %s site found. Run: migraine:register %s', $siteName, $siteName);
+    exit(1);
+}
+
+$typesSchemaPath = $config->getPath([
+    'inventory',
+    $siteName,
+    'types.schema.json',
+]);
+
+if (!is_file($typesSchemaPath)
+    || !($typesSchema = json_decode(file_get_contents($typesSchemaPath), TRUE))
+    || !is_array($typesSchema)
+) {
+    _error("Could not load '%s'. Run migraine:inventory %s.", $typesSchema, $siteName);
+    exit(1);
+}
+
+$fieldsInfoPath = $config->getPath([
+    'inventory',
+    $siteName,
+    'fields.json',
+]);
+
+if (!is_file($fieldsInfoPath)
+    || !($fieldsInfo = json_decode(file_get_contents($fieldsInfoPath), TRUE))
+    || !is_array($fieldsInfo)
+) {
+    _error("Could not load '%s'. Run migraine:inventory %s.", $fieldsInfoPath, $siteName);
+    exit(1);
+}
+
+$fieldsSchemaPath = $config->getPath([
+    'inventory',
+    $siteName,
+    'fields.schema.json',
+]);
+
+if (!is_file($fieldsSchemaPath)
+    || !($fieldsSchema = json_decode(file_get_contents($fieldsSchemaPath), TRUE))
+    || !is_array($fieldsSchema)
+) {
+    _error("Could not load '%s'. Run migraine:inventory %s.", $fieldsSchemaPath, $siteName);
+    exit(1);
+}
+
+if (!isset($typesSchema[$entityTypeId]) || !isset($fieldsSchema[$entityTypeId][$bundleId])) {
+    _error('Unrecognised entity type/bundle "%s.%s".', $entityTypeId, $bundleId);
+    exit(1);
+}
+
+$base = $typesSchema[$entityTypeId];
+$fields = $fieldsSchema[$entityTypeId][$bundleId];
+
+if (!$base['is_sqlable']) {
+    _error('Cannot generate sql for entity type %s. It does not use Drupal default SQL storage.', $entityTypeId);
+    exit(1);
+}
+
+if ($isRevisions && !$base['is_revisionable']) {
+    _error('Cannot generate sql for entity type %s. It does not support revisions and --revisions was specified.', $entityTypeId);
+    exit(1);
+}
+
+$sqlFields = [];
+$sqlTables = [];
+$aliases = [];
+
+$makeAlias = function($name) use (&$aliases) {
+    $name = preg_replace('/^(field_data_|field_revision_|([a-z]+_)+_)/i', '', $name);
+    $alias = implode('', array_map(fn($b) => substr($b, 0, 1), explode('_', $name)));
+
+    $suffix = '';
+    do {
+        $candidateAlias = $alias . $suffix;
+        $suffix = empty($suffix) ? 2 : $suffix + 1;
+    }
+    while (isset($aliases[$candidateAlias]));
+
+    $alias = $candidateAlias;
+    return $aliases[$alias] = $alias;
+};
+
+$addTable = function($name, bool $isShared, ?callable $makeJoin) use (&$sqlTables, $makeAlias): string {
+    if (isset($sqlTables[$name]) && $isShared) {
+      return $sqlTables[$name]['alias'];
+    }
+
+    $key = $name;
+
+    if (!$isShared) {
+        $suffix = '';
+        do {
+            $candidateKey = $name . $suffix;
+            $suffix = empty($suffix) ? 2 : $suffix + 1;
+        } while (isset($sqlTables[$candidateKey]));
+        $key = $candidateKey;
+    }
+
+    if (!isset($sqlTables[$key])) {
+      $alias = $makeAlias($name);
+        $sqlTables[$key] = [
+            'key' => $key,
+            'name' => $name,
+            'alias' => $alias,
+            'join' => isset($makeJoin) ? $makeJoin($alias) : NULL,
+        ];
+    }
+
+    return $sqlTables[$key]['alias'];
+};
+
+$baseTable = $isRevisions ? $base['revision_table'] : $base['base_table'];
+$b = $addTable($baseTable, TRUE, NULL);
+
+$id = 'nid';
+$vid = 'vid';
+$bundle = 'type';
+
+foreach ($fields as $fieldName => $field) {
+    if (!$field['is_sqlable']) {
+        continue;
+    }
+
+    $fieldInfo = $fieldsInfo[$entityTypeId][$bundleId][$fieldName];
+
+    $t = $isRevisions && $field['is_revisionable'] && isset($field['revision_table'])
+        ? $field['revision_table']
+        : $field['data_table'];
+
+    $extraJoin = '';
+    if (!empty($field['extra_join_conditions'])) {
+        $conds = [];
+        foreach ($field['extra_join_conditions'] as $column => $value) {
+            $conds[] = "$column = \"$value\"";
+        }
+        $extraJoin = ' AND ' . implode(' AND ', $conds);
+    }
+
+    $alias = $addTable(
+        $t,
+        $field['is_shared'],
+        fn ($a) => "LEFT JOIN $t $a ON $a.entity_id = $b.$id AND $a.revision_id = $b.{$vid}{$extraJoin}",
+    );
+
+    if (!$isGroup || $fieldInfo['cardinality'] == 1) {
+        foreach ($field['columns'] as $column) {
+            $sqlFields[] = "$alias.$column";
+        }
+    }
+    else {
+        $sqlFields[] = implode('', [
+            'GROUP_CONCAT(',
+            'CONCAT(',
+            implode(',",",', array_map(fn($c) => "$alias.$c", $field['columns'])),
+            ')',
+            ' SEPERATOR=":")',
+        ]);
+    }
+}
+
+$sql = [];
+
+$sql[] = 'SELECT';
+
+foreach ($sqlFields as $index => $sqlField) {
+    $sql[] = '  ' . $sqlField . ($index === count($sqlFields) - 1 ? '' : ', ');
+}
+
+$sql[] = "FROM $baseTable $b";
+
+unset($sqlTables[$baseTable]);
+
+foreach ($sqlTables as $sqlTable) {
+    $sql[] = $sqlTable['join'];
+}
+
+if ($bundleId !== $entityTypeId && isset($bundle)) {
+    $sql[] = "WHERE $bundle = '$bundleId'";
+}
+
+if ($isGroup) {
+    $sql[] = "GROUP BY $b.$id";
+}
+
+$sql[] = "ORDER BY $b.$id DESC";
+
+$sql[] = ';';
+
+print implode("\n", $sql);
+exit;
