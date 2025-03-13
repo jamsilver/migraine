@@ -4,6 +4,7 @@ set -e
 #MISE description="Starts aider to generate, or update, an actual migration yaml."
 #USAGE flag "-f --force" help="Set this to ignore an empty template_migrations directory"
 #USAGE arg "<migration_id>" help="The ID of the migration to guess the mapping for"
+#USAGE arg "[file]" help="Path to existing migration file to pass to the LLM for improvement"
 
 source "$MISE_TASK_DIR/../.includes/helpers.sh"
 
@@ -15,6 +16,7 @@ fi
 
 FORCE="${usage_force:-false}"
 MIGRATION_ID="$usage_migration_id"
+EXISTING_FILE="$usage_file"
 
 if ! command -v aider 2>&1 >/dev/null
 then
@@ -33,6 +35,17 @@ fi
 if [ ! -d ".migraine/prompts" ] || [ ! -r ".migraine/prompts/$MIGRATION_ID.md" ] ; then
   echo "Could not find .migraine/prompts/$MIGRATION_ID.md. Have you run migraine:prompt?" >&2
   exit 1
+fi
+
+EXTRA_READ=""
+MESSAGE_EXTRA=""
+if [ ! -z "$EXISTING_FILE" ] ; then
+  if [ ! -r "$EXISTING_FILE" ]; then
+    echo "Existing migration file \"$EXISTING_FILE\" does not exist or is not readable." >&2
+    exit 1
+  fi
+  EXTRA_READ=--read="$EXISTING_FILE"
+  MESSAGE_EXTRA=" Note a previous version of the migration exists at $EXISTING_FILE. Read, update, and overwrite this file."
 fi
 
 if [ ! -d ".migraine/templates" ]; then
@@ -60,4 +73,5 @@ run aider \
   --map-tokens=0 \
   --read=".migraine/prompts/$MIGRATION_ID.md" \
   --read=".migraine/templates/migrations" \
-  --message="Read .migraine/prompts/$MIGRATION_ID.md and follow all instructions."
+  "$EXTRA_READ" \
+  --message="Read .migraine/prompts/$MIGRATION_ID.md and follow all instructions.$MESSAGE_EXTRA"
