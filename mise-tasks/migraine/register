@@ -5,6 +5,7 @@
 //USAGE arg "<dir>" help="Path to the local Drupal root"
 //USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
 //USAGE flag "-D --delete" help="Pass to unregister the site instead of register."
+//USAGE flag "-n --no-inventory" help="Pass skip taking inventory."
 
 namespace Migraine;
 
@@ -16,6 +17,7 @@ $targetName = $argv[1];
 $drupalRootPath = $argv[2];
 $drushCmd = getenv('usage_drush');
 $delete = getenv('usage_delete') === 'true';
+$noInventory = getenv('usage_no-inventory') === 'true';
 
 require_once "$taskDir/.includes/vendor/autoload.php";
 
@@ -71,3 +73,16 @@ _log(
 );
 
 $config->set('sites', $sites);
+
+if ($noInventory) {
+  exit;
+}
+
+_log('Taking initial inventory..');
+
+_exec($projectRoot, sprintf(
+  '%s %s --drush="%s"',
+    realpath(Path::join($taskDir, 'inventory')),
+    $targetName,
+    $drushCmd,
+));

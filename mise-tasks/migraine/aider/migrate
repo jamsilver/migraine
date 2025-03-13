@@ -16,13 +16,22 @@ fi
 FORCE="${usage_force:-false}"
 MIGRATION_ID="$usage_migration_id"
 
+if ! command -v aider 2>&1 >/dev/null
+then
+    echo "Please install aider to access migraine:aider:* tasks:" >&2
+    echo "" >&2
+    echo "    https://github.com/Aider-AI/aider" >&2
+    echo "" >&2
+    exit 1
+fi
+
 if [ ! -d ".migraine" ] ; then
   echo "Migraine directory .migraine does not exist or is not a directory. Have you run migraine:inventory?" >&2
   exit 1
 fi
 
 if [ ! -d ".migraine/prompts" ] || [ ! -r ".migraine/prompts/$MIGRATION_ID.md" ] ; then
-  echo "Could not find .migraine/prompts/$MIGRATION_ID.md. Have you run migraine:make-prompt?" >&2
+  echo "Could not find .migraine/prompts/$MIGRATION_ID.md. Have you run migraine:prompt?" >&2
   exit 1
 fi
 
@@ -36,7 +45,7 @@ fi
 
 if [ ! "$FORCE" == "true" ] && [ -z "$(find ".migraine/templates/migrations" -maxdepth 1 -name "*.yml" -type f -print -quit)" ]; then
   echo "" >&2
-  echo "  [WARNING] There are no yml files in ".migraine/templates/migrations". You will see greatly improved" >&2
+  echo "  [WARNING] There are no yml files in \".migraine/templates/migrations\". You will see greatly improved" >&2
   echo "  results if you copy some example migrations into this folder. Why not copy some from Drupal 10"  >&2
   echo "  core locations such as:" >&2
   echo "    - core/modules/node/migrations/" >&2

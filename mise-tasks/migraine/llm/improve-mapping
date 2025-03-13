@@ -16,13 +16,22 @@ fi
 MODEL="${usage_model:-o1}"
 MIGRATION_ID="$usage_migration_id"
 
+if ! command -v llm 2>&1 >/dev/null
+then
+    echo "Please install llm to access migraine:llm:* tasks:" >&2
+    echo "" >&2
+    echo "    https://llm.datasette.io/" >&2
+    echo "" >&2
+    exit 1
+fi
+
 if [ ! -d ".migraine" ] ; then
   echo "Migraine directory .migraine does not exist or is not a directory. Have you run migraine:inventory?" >&2
   exit 1
 fi
 
 if [ ! -d ".migraine/prompts" ] || [ ! -r ".migraine/prompts/$MIGRATION_ID.md" ] ; then
-  echo "Could not find .migraine/prompts/$MIGRATION_ID.md. Have you run migraine:make-prompt?" >&2
+  echo "Could not find .migraine/prompts/$MIGRATION_ID.md. Have you run migraine:prompt?" >&2
   exit 1
 fi
 

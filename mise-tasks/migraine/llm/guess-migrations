@@ -14,6 +14,15 @@ fi
 
 MODEL="${usage_model:-o1}"
 
+if ! command -v llm 2>&1 >/dev/null
+then
+    echo "Please install llm to access migraine:llm:* tasks:" >&2
+    echo "" >&2
+    echo "    https://llm.datasette.io/" >&2
+    echo "" >&2
+    exit 1
+fi
+
 if [ ! -d ".migraine" ] || [ ! -r ".migraine/migraine.yml" ] ; then
   echo "Could not read .migraine/migraine.yml config. Have you run migraine:register?" >&2
   exit 1

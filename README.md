@@ -16,23 +16,19 @@ intelligently. Y&apos;know. Have more fun 🚀 🎉 😀.
 
 Install everything (see below) and then:
 
-    # 1. Tell migraine about your source and destination sites.
+    # Gather entity type/field structure data about your source and destination sites.
     mise run migraine:register source /path/to/d7
     mise run migraine:register dest .
 
-    # 2. Gather entity type/field structure data about your sites.
-    mise run migraine:inventory source
-    mise run migraine:inventory dest
-
-    # 2. Make JSON list of all needed migrations.
+    # Make JSON list of all needed migrations.
     mise run migraine:llm:guess-migrations
 
       # Hand-fix/tweak .migraine/migrations.json.
 
-    # 3. Generate an AI prompt file for each migration.
-    mise run migraine:make-prompt \*
+    # Generate an AI prompt file for each migration.
+    mise run migraine:prompt \*
 
-    # 4. Generate a migration yml file.
+    # Generate a migration yml file.
     mise run migraine:llm:improve-mapping <MIGRATION_ID>
     mise run migraine:aider:migrate <MIGRATION_ID>
 
@@ -41,15 +37,31 @@ Install everything (see below) and then:
       # Commit.
       # Repeat.
 
+    # Copy a mysql query to your clipboard that lists all entity field values in the source
+    mise run migraine:sql source node article | pbcopy
+
+    # Useful for testing.. and for the the destination too.
+    mise run migraine:sql dest node article | pbcopy
+
+    # Update the inventory following some field schema changes.
+    mise run migraine:inventory dest
+
 For more details about each task and how you might use it, keep reading.
+
 
 ## Installation/requirements
 
  - [Install mise](https://mise.jdx.dev/getting-started.html),
- - Download the contents of this repo's `mise-tasks` folder into your D10 project folder at e.g. `.mise/tasks`, or perhaps in `$HOME/.config/mise/tasks` (see [mise task docs](https://mise.jdx.dev/tasks/) for more information),
  - Install PHP version >= 8.2,
  - Install and configure [llm](https://github.com/simonw/llm) to unlock `migraine:llm:*` tasks,
  - Install and configure [aider](https://github.com/Aider-AI/aider) to unlock `migraine:aider:*` tasks. Recommend `--architect` mode,
+ - Download the contents of this repo's `mise-tasks` folder a Drupal project folder at `.mise/tasks`,
+   - To make this globally available, copy it to `$HOME/.config/mise/tasks` (see [mise task docs](https://mise.jdx.dev/tasks/) for more information),
+ - Each command-file must be made executable. Execute the `install` command to do this automatically:
+
+       chmod u+x .mise/tasks/migraine/install && mise run migraine:install
+
+(If you installed it somewhere else, modify the above command to use the right path).
 
 This tool _invokes_ `llm` and `aider` but does not configure them. It is up to you to register with your preferred AI 
 provider, generate API keys, and configure `llm` and `aider`the way you like it. If you like, you can look at 
@@ -89,6 +101,11 @@ Un-register a site by passing a `--delete` or `-D` flag:
 
     mise run migraine:register source /path/to/site --delete
 
+By default an immediate inventory is taken on a newly registered site. To skip
+this for some reason, pass the `--no-inventory` options:
+
+    mise run migraine:register s /path/to/site --no-inventory
+
 
 ### 2. List all registered sites.
 
@@ -112,6 +129,8 @@ Discovers entity type and field information about your destination site:
 
 This information is stored in JSON files inside `.migraine/inventory`. It is
 used by other commands to use to, e.g., generate prompts.
+
+An inventory is taken automatically when a site is first registered.
 
 #### Non-ddev drush support
 
@@ -141,11 +160,11 @@ this file by hand before moving on to the next step.
 
 This task iterates over each migration in `.migraine/migrations.json` and generates a suitable markdown file:
 
-    mise run migraine:make-prompt \*
+    mise run migraine:prompt \*
 
 You can also generate one at a time:
 
-    mise run migraine:make-prompt node_article
+    mise run migraine:prompt node_article
 
 The first time this runs, the template used to generate them is placed in `.migraine/templates/prompts/migration-prompt.md`.
 You are free to update this and re-run.

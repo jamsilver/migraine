@@ -1,12 +1,12 @@
 # INSTRUCTIONS
 
-Write a $SOURCE_ENV_TYPE to $DEST_ENV_TYPE migrate_plus migration yml into config/sync/ for the migration specified in this
+Write a Drupal $SOURCE_ENV_TYPE to Drupal $DEST_ENV_TYPE migrate_plus migration yml into config/sync/ for the migration specified in this
 file. Use the File template section below as a starting point. Fill out the rest of the migration yml in accordance with
 the Mapping, and Field mapping sections below. Do not insert comments or blank lines into the yml file.
 
 The migration ID should be: $MIGRATION_ID
 
-Where relevant, repeat patterns from the template migrations in .migraine/template_mappings/*.yml
+Where relevant, repeat patterns from the template migrations in .migraine/templates/migrations/*.yml
 
 ## File template
 

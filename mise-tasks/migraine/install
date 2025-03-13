@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -e
+
+#MISE description="Helper command that makes all other command files executable and ready for use."
+
+source "$MISE_TASK_DIR/.includes/helpers.sh"
+
+echo "==> Making all migraine scripts executable" >&2
+
+run chmod u+x "$MISE_TASK_DIR/aider/migrate" \
+  "$MISE_TASK_DIR/llm/guess-migrations" \
+  "$MISE_TASK_DIR/llm/improve-mapping" \
+  "$MISE_TASK_DIR/install" \
+  "$MISE_TASK_DIR/inventory" \
+  "$MISE_TASK_DIR/prompt" \
+  "$MISE_TASK_DIR/register" \
+  "$MISE_TASK_DIR/sql" \
+  "$MISE_TASK_DIR/status"
+
+echo "" >&2
+
+if ! command -v aider 2>&1 >/dev/null
+then
+    echo "Please install aider to access migraine:aider:* tasks:" >&2
+    echo "" >&2
+    echo "    https://github.com/Aider-AI/aider" >&2
+    echo "" >&2
+    exit 1
+fi
+
+if ! command -v llm 2>&1 >/dev/null
+then
+    echo "Please install llm to access migraine:llm:* tasks:" >&2
+    echo "" >&2
+    echo "    https://llm.datasette.io/" >&2
+    echo "" >&2
+    exit 1
+fi
+
+echo "To list all migraine tasks run:" >&2
+echo "" >&2
+echo "    mise tasks ls | grep migraine" >&2
+echo "" >&2
