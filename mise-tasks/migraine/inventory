@@ -3,14 +3,12 @@
 //MISE description="Take a site inventory."
 //MISE alias="i"
 //USAGE arg "<targetName>" help="'source' or 'dest'"
-//USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
 
 namespace Migraine;
 
 $projectRoot = getenv('MISE_ORIGINAL_CWD');
 $taskDir = getenv('MISE_TASK_DIR');
 $siteName = $argv[1];
-$drushCmd = getenv('usage_drush');
 
 require_once "$taskDir/.includes/vendor/autoload.php";
 
@@ -28,6 +26,8 @@ if (!$sites || !isset($sites[$siteName]) || !isset($sites[$siteName]['drupalVers
   _error('No %s site found. Run: migraine:register %s', $siteName, $siteName);
   exit(1);
 }
+
+$drushCmd = $sites[$siteName]['drush'] ?? 'ddev drush';
 
 try {
   $drupalRoot = new DrupalRoot($sites[$siteName]['path']);

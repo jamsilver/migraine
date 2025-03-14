@@ -7,46 +7,81 @@
 A small suite of commands that reduce the developer burden involved in information gathering and migration yml
 creation. LLMs are used where they make sense and good old-fashioned helper scripts are used where they don&apos;t.
 
-This project does not, and could never, &ldquo;fully automate&rdquo; the generation of migrations. Instead, the hope is 
+These scripts do not &ldquo;fully automate&rdquo; the generation of migrations. Instead, the hope is
 by removing a chunk of the busywork, developers are able to invest their cognitive and creative energies more 
-intelligently. Y&apos;know. Have more fun 🚀 🎉 😀.
+intelligently.
 
 
 ## TL;DR
 
-Install everything (see below) and then:
+Install in your destination Drupal project folder and then:
 
     # Gather entity type/field structure data about your source and destination sites.
-    mise run migraine:register source /path/to/d7
-    mise run migraine:register dest .
+    mise run mig:register source /path/to/d7
+    mise run mig:register dest .
 
     # Make JSON list of all needed migrations.
-    mise run migraine:llm:guess-migrations
+    mise run mig:llm:guess-migrations
 
       # Hand-fix/tweak .migraine/migrations.json.
 
     # Generate an AI prompt file for each migration.
-    mise run migraine:prompt \*
+    mise run mig:prompt \*
 
-    # Generate a migration yml file.
-    mise run migraine:llm:improve-mapping <MIGRATION_ID>
-    mise run migraine:aider:migrate <MIGRATION_ID>
+    # Use aider to generate a first-draft migration yml file.
+    mise run mig:aider:migrate node_article
 
       # Hand-fix/tweak config/sync/migrate_plus.migration.<MIGRATION_ID>.yml.
-      # Test.
-      # Commit.
-      # Repeat.
 
-    # Copy a mysql query to your clipboard that lists all entity field values in the source
-    mise run migraine:sql source node article | pbcopy
+    # Pass an existing yml to aider for improvement.
 
-    # Useful for testing.. and for the the destination too.
-    mise run migraine:sql dest node article | pbcopy
+    mise run mig:aider:migrate node_article config/sync/migrate_plus.migration.node_article.yml
 
-    # Update the inventory following some field schema changes.
-    mise run migraine:inventory dest
+    # Generate mysql queries that list all entity field values in source and destination.
+    mise run mig:sql source node article | pbcopy
+    mise run mig:sql dest node article | pbcopy
 
-For more details about each task and how you might use it, keep reading.
+    # Update the destination site inventory following some field schema changes.
+    mise run mig:inventory dest
+
+
+### Drupal 6/7 upgrades
+
+You can use Drupal core + [Migrate Upgrade](https://www.drupal.org/project/migrate_upgrade) to generate the first
+version of all migrations and then pass it to aider for improvement:
+
+    # Get Drupal to generate the first version of your migrations.
+    ddev drush migrate:upgrade --configure-only --legacy-db-key=migrate
+
+    # Get migraine to guess its migrations.json from the generated migrations.
+    mise run mig:set-migrations --group="drupal_7" --tag="Content"
+
+    # Migraine's attempt to guess migrations.json values from the config sucks, improve with AI.
+    mise run mig:llm:guess-migrations --improve
+
+      # Hand-fix/tweak .migraine/migrations.json.
+
+    # Re-generate prompts from the new migrations.json.
+    mise run mig:prompt \* --force
+
+    # Export the generated migrations and use aider to improve one.
+    ddev drush config:export -y
+    mise run mig:aider:migrate upgrade_d7_node_article config/sync/migrate_plus.migration.upgrade_d7_node_article.yml
+
+
+## More task tips
+
+For more details about any task, run it with the `--help` flag, e.g.:
+
+    mise run mig:inventory --help
+
+Most commands can be accessed via their initialism, and the same for "source" and "dest", e.g.:
+
+    # Take inventory of the source
+    mise run mig:i s
+
+    # Set migration from config
+    mise run mig:sm
 
 
 ## Installation/requirements

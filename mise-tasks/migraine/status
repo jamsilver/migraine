@@ -2,13 +2,11 @@
 <?php
 //MISE description="Show status of registered sites."
 //MISE alias="s"
-//USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
 
 namespace Migraine;
 
 $projectRoot = getenv('MISE_ORIGINAL_CWD');
 $taskDir = getenv('MISE_TASK_DIR');
-$drushCmd = getenv('usage_drush');
 
 require_once "$taskDir/.includes/vendor/autoload.php";
 
@@ -18,6 +16,8 @@ $rows = [];
 $sites = $config->get('sites', []);
 foreach (array_keys($sites) as $name) {
     $status = 'OK';
+
+    $drushCmd = $sites['drush'] ?? 'ddev drush';
 
     try {
         $root = new DrupalRoot($sites[$name]['path']);

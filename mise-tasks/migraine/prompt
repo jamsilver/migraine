@@ -125,7 +125,9 @@ $makeFieldTable = function(array $fields, string $entityTypeId, string $bundleId
             $typeExtra[] = $field['reference_target_type']
               . (
                   !empty($field['reference_target_bundles'])
-                      ? ': ' . implode(',', $field['reference_target_bundles'])
+                      ? ': ' . (is_array($field['reference_target_bundles'])
+                        ? implode(',', $field['reference_target_bundles'])
+                        : (string) $field['reference_target_bundles'])
                       : ''
                 );
         }

@@ -4,7 +4,7 @@
 //MISE alias="p"
 //USAGE arg "<targetName>" help="'source' or 'dest'"
 //USAGE arg "<dir>" help="Path to the local Drupal root"
-//USAGE flag "--drush" default="ddev drush" help="The command to invoke drush from the drupal root."
+//USAGE flag "--drush" default="" help="Set the command that invokes drush from the drupal root. Defaults to ddev drush."
 //USAGE flag "-D --delete" help="Pass to unregister the site instead of register."
 //USAGE flag "-n --no-inventory" help="Pass to skip taking inventory."
 
@@ -57,14 +57,21 @@ catch (\Exception $e) {
   exit(1);
 }
 
+if (isset($sites[$targetName]['drush']) && empty($drushCmd)) {
+    $drushCmd = $sites[$targetName]['drush'];
+}
+
 $drushStatus = _execGetJson($root->getDrupalRoot(), sprintf('%s status --format=json', $drushCmd));
 
 if (!is_array($drushStatus)) {
     _error('Error executing % status in %s: %s', $drushCmd, $root->getDrupalRoot(), $drushStatus);
+    _error('To change the command used to invoke drush, pass via --drush="<command>".');
+    exit(1);
 }
 
 $sites[$targetName]['drupalVersion'] = $drushStatus['drupal-version'] ?? $root->getMajorDrupalVersion();
 $sites[$targetName]['path'] = Path::makeRelative($root->getDrupalRoot(), getcwd());
+$sites[$targetName]['drush'] = $drushCmd;
 $sites[$targetName]['inventoried'] = false;
 krsort($sites);
 

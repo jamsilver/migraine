@@ -1,0 +1,72 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Show status of registered sites."
+//MISE alias="sm"
+//USAGE flag "--group [group]" help="Optionally restrict migrations by group. Comma-separate multiple values."
+//USAGE flag "--tag [tag]" help="Optionally restrict migrations by tag. Comma-separate multiple values."
+//USAGE flag "--id [id]" help="Optionally restrict migrations by ID. Comma-separate multiple values."
+
+namespace Migraine;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$group = trim(getenv('usage_group'));
+$tag = trim(getenv('usage_tag'));
+$migrationIds = trim(getenv('usage_id'));
+
+require_once "$taskDir/.includes/vendor/autoload.php";
+
+$config = Config::forDirectory($projectRoot);
+$sites = $config->get('sites', []);
+$siteName = 'dest';
+
+if (!isset($sites[$siteName])) {
+  _error('No dest site found. Run migraine:register dest');
+  exit(1);
+}
+
+$siteConfig = $sites[$siteName];
+
+try {
+    $root = new DrupalRoot($siteConfig['path']);
+}
+catch (\Exception $e) {
+  _error($e->getMessage());
+  exit(1);
+}
+
+$drushCmd = $siteConfig['drush'] ?? 'ddev drush';
+
+_log('==> Moving migraine scripts to %s..', $root->getDrupalRoot());
+
+_move_migraine_scripts_to_site($root->getDrupalRoot());
+
+_exec($root->getDrupalRoot(), sprintf(
+    '%s %s',
+    $drushCmd,
+    $root->getMajorDrupalVersion() >= 8 ? 'cache:rebuild' : 'cache-clear drush',
+));
+
+$migrations = _execGetJson($root->getDrupalRoot(), $command = sprintf(
+    '%s php:script d10-list-migrations.php --script-path=.migraine-scripts --%s%s%s',
+    $drushCmd,
+    (!empty($group) && !in_array($group, ['true', 'false'], TRUE)) ? ' --group="' . $group . '"' : '',
+    (!empty($tag) && !in_array($tag, ['true', 'false'], TRUE)) ? ' --tag="' . $tag . '"' : '',
+    (!empty($migrationIds) && !in_array($migrationIds, ['true', 'false'], TRUE)) ? ' --ids="' . $migrationIds . '"' : '',
+));
+
+if (!is_array($migrations)) {
+  _error('Unexpected error loading migrations, exiting.');
+  exit(1);
+}
+
+if (empty($migrations)) {
+  _error('No migrations found matching criteria, exiting.');
+  exit(1);
+}
+
+$migrationsPath = $config->getPath(['migrations.json']);
+_log('Writing %d migrations to "%s".', count($migrations), $migrationsPath);
+file_put_contents($migrationsPath, json_encode($migrations, JSON_PRETTY_PRINT));
+_log('');
+_log('The source/dest types/bundles have been guessed. Please review and fix the file manually.');

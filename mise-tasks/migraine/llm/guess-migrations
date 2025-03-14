@@ -2,7 +2,9 @@
 set -e
 
 #MISE description="Generate migrations list by asking AI to guess."
+#MISE alias="gm"
 #USAGE flag "-m --model <model>" help="The LLM model to use" default="o1"
+#USAGE flag "-i --improve" help="Feed the existing migrations.json to the LLM to improve"
 
 source "$MISE_TASK_DIR/../.includes/helpers.sh"
 
@@ -13,6 +15,7 @@ if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
 fi
 
 MODEL="${usage_model:-o1}"
+IMPROVE="$usage_improve"
 
 if ! command -v llm 2>&1 >/dev/null
 then
@@ -46,6 +49,11 @@ if [ -z "$SOURCE_VERSION" ] || [ -z "$DEST_VERSION" ]; then
   exit 1
 fi
 
+if [ "$IMPROVE" == "true" ] && [ ! -r ".migraine/migrations.json" ]; then
+  echo "--improve was passed, but cannot read .migraine/migrations.json"
+  exit 1
+fi
+
 PROMPT=$(
 cat <<- END_HEREDOC
 You are an expert Drupal developer assisting with the planning and execution of a Drupal $SOURCE_VERSION to Drupal $DEST_VERSION migration.
@@ -59,6 +67,32 @@ $(cat ".migraine/inventory/source/types.json")
 DESTINATION TYPES/BUNDLES
 
 $(cat ".migraine/inventory/dest/types.json")
+
+END_HEREDOC
+)
+
+if [ "$IMPROVE" == "true" ]; then
+
+  echo "Asking LLM to improve existing .migraine/migrations.json" >&2
+
+  PROMPT=$(
+  cat <<- END_HEREDOC
+$PROMPT
+
+IMPROVE PREVIOUS VERSION
+
+The following JSON is an earlier listing of migrations, with guessed values. Keep the existing IDs, but examine the source/destinatino
+data and improve the values where they seem wrong.
+
+$(cat ".migraine/migrations.json")
+
+END_HEREDOC
+)
+fi
+
+PROMPT=$(
+cat <<- END_HEREDOC
+$PROMPT
 
 OUTPUT FORMAT
 

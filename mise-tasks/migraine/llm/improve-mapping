@@ -2,6 +2,7 @@
 set -e
 
 #MISE description="Uses AI to improves the Field mapping portion of an existing migrations prompt."
+#MISE alias="im"
 #USAGE flag "-m --model <model>" help="The LLM model to use" default="o1"
 #USAGE arg "<migration_id>" help="The ID of the migration to guess the mapping for"
 

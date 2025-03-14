@@ -14,6 +14,7 @@ run chmod u+x "$MISE_TASK_DIR/aider/migrate" \
   "$MISE_TASK_DIR/inventory" \
   "$MISE_TASK_DIR/prompt" \
   "$MISE_TASK_DIR/register" \
+  "$MISE_TASK_DIR/set-migrations" \
   "$MISE_TASK_DIR/sql" \
   "$MISE_TASK_DIR/status"
 
