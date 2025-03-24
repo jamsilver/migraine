@@ -7,9 +7,7 @@
 A small suite of commands that reduce the developer burden involved in information gathering and migration yml
 creation. LLMs are used where they make sense and good old-fashioned helper scripts are used where they don&apos;t.
 
-These scripts do not &ldquo;fully automate&rdquo; the generation of migrations. Instead, the hope is
-by removing a chunk of the busywork, developers are able to invest their cognitive and creative energies more 
-intelligently.
+These are rough-and-ready scripts that I made to test if AI could add value for writing migrations. There's lots that needs to be improved!
 
 
 ## TL;DR
@@ -34,7 +32,6 @@ Install in your destination Drupal project folder and then:
       # Hand-fix/tweak config/sync/migrate_plus.migration.<MIGRATION_ID>.yml.
 
     # Pass an existing yml to aider for improvement.
-
     mise run mig:aider:migrate node_article config/sync/migrate_plus.migration.node_article.yml
 
     # Generate mysql queries that list all entity field values in source and destination.
@@ -43,6 +40,9 @@ Install in your destination Drupal project folder and then:
 
     # Update the destination site inventory following some field schema changes.
     mise run mig:inventory dest
+
+    # Dump markdown files for every entity type in source into ~/.migraine/document
+    mise run mig:document source
 
 
 ### Drupal 6/7 upgrades

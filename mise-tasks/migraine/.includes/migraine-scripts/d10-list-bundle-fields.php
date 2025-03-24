@@ -53,11 +53,6 @@ $entityStorage = $entityTypeManager->getStorage($entityTypeID);
 // Get field definitions for the bundle
 $fieldDefinitions = $entityFieldManager->getFieldDefinitions($entityTypeID, $bundle);
 
-if (empty($fieldDefinitions)) {
-    fprintf(STDERR, 'No fields found for bundle "%s.%s".' . "\n", $entityTypeID, $bundle);
-    exit(1);
-}
-
 $fields = [];
 
 foreach ($fieldDefinitions as $fieldName => $field) {

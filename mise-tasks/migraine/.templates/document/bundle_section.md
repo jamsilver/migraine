@@ -1,0 +1,3 @@
+## Bundle: $BUNDLE_ID
+
+$BUNDLE_FIELD_TABLE

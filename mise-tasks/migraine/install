@@ -10,6 +10,7 @@ echo "==> Making all migraine scripts executable" >&2
 run chmod u+x "$MISE_TASK_DIR/aider/migrate" \
   "$MISE_TASK_DIR/llm/guess-migrations" \
   "$MISE_TASK_DIR/llm/improve-mapping" \
+  "$MISE_TASK_DIR/document" \
   "$MISE_TASK_DIR/install" \
   "$MISE_TASK_DIR/inventory" \
   "$MISE_TASK_DIR/prompt" \

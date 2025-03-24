@@ -16,7 +16,7 @@ $projectRoot = getenv('MISE_ORIGINAL_CWD');
 $taskDir = getenv('MISE_TASK_DIR');
 $targetName = $argv[1];
 $drupalRootPath = $argv[2];
-$drushCmd = getenv('usage_drush');
+$drushCmd = getenv('usage_drush') ?: 'ddev drush';
 $delete = getenv('usage_delete') === 'true';
 $noInventory = getenv('usage_no-inventory') === 'true';
 

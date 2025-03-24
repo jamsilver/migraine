@@ -1,0 +1,200 @@
+#!/usr/bin/env php
+<?php
+//MISE description="Generate a markdown file for each entity type."
+//MISE alias="d"
+//USAGE arg "<siteName>" help="Typically 'source' or 'dest'."
+//USAGE arg "[entityTypeId]" help="The entity type to generate the document for. Omit to do all."
+//USAGE flag "-f --force" help="Specify this and all prompts will be overwritten"
+
+namespace Migraine;
+
+$projectRoot = getenv('MISE_ORIGINAL_CWD');
+$taskDir = getenv('MISE_TASK_DIR');
+$siteName = $argv[1];
+$entityTypeId = $argv[2] ?? NULL;
+if ($entityTypeId === '*') {
+    $entityTypeId = NULL;
+}
+$force = getenv('usage_force') === 'true';
+
+require_once "$taskDir/.includes/vendor/autoload.php";
+
+$config = Config::forDirectory($projectRoot);
+
+$sites = $config->get('sites');
+
+$siteName = match($siteName) {
+  's', 'source' => 'source',
+  'd', 'dest', 'destination' => 'dest',
+  default => $siteName,
+};
+
+if (!isset($sites[$siteName])) {
+  _error('Could not find site by name "%s". Run migrate:register', $siteName);
+  exit(1);
+}
+
+$templateDocumentPath = $config->getPath(['templates', 'document']);
+_move_migraine_files_to_output_dir("$taskDir/.templates/document/*.md", $templateDocumentPath);
+
+_log('==> Moving document templates to "%s".', $templateDocumentPath);
+
+$typesPath = $config->getPath(['inventory', $siteName, 'types.json']);
+
+if (!is_file($typesPath)
+    || !($types = json_decode(file_get_contents($typesPath), TRUE))
+    || !is_array($types)
+) {
+    _error("Could not load '%s'. Run migraine:inventory %s.", $typesPath, $siteName);
+    exit(1);
+}
+
+if (isset($entityTypeId)) {
+    if (!isset($types[$entityTypeId])) {
+        _error("Unrecognised entity type ID '%s' in %s.", $entityTypeId, $siteName);
+        exit(1);
+    }
+    $types = [$entityTypeId => $types[$entityTypeId]];
+}
+
+$templateTypePath = $config->getPath([
+    'templates',
+    'document',
+    'type.md',
+]);
+$templateType = file_get_contents($templateTypePath);
+
+if (empty($templateType)) {
+    _error('Template type document "%s" is empty. Please fix, or delete to regenerate default one.', $templateTypePath);
+    exit(1);
+}
+
+$templateBundleSectionPath = $config->getPath([
+  'templates',
+  'document',
+  'bundle_section.md',
+]);
+$templateBundleSection = file_get_contents($templateBundleSectionPath);
+
+if (empty($templateBundleSection)) {
+  _error('Template type document "%s" is empty. Please fix, or delete to regenerate default one.', $templateBundleSectionPath);
+  exit(1);
+}
+
+$fieldsPath = $config->getPath(['inventory', $siteName, 'fields.json']);
+
+if (
+    !is_file($fieldsPath)
+    || !($fields = json_decode(file_get_contents($fieldsPath), TRUE))
+    || !is_array($fields)
+    || empty($fields)
+) {
+    _error('Could not read fields from %s inventory ("%s"). Run: migrate:inventory %s', $siteName, $fieldsPath, $siteName);
+    exit(1);
+}
+
+$makeFieldTable = function(array $fields, string $entityTypeId, string $bundleId): ?string {
+    $table = new TextTable([
+        'field_name' => 'FIELD NAME',
+        'field_type' => 'TYPE',
+        'cardinality' => 'CARDINALITY',
+    ]);
+
+    $rows = [];
+
+    foreach ($fields as $field) {
+        $typeExtra = [];
+
+        if (!empty($field['allowed_values'])) {
+            $typeExtra[] = 'values: ' . implode(',', $field['allowed_values']);
+        }
+
+        if (!empty($field['reference_target_type'])) {
+            $typeExtra[] = $field['reference_target_type']
+              . (
+                  !empty($field['reference_target_bundles'])
+                      ? ': ' . (is_array($field['reference_target_bundles'])
+                        ? implode(',', $field['reference_target_bundles'])
+                        : (string) $field['reference_target_bundles'])
+                      : ''
+                );
+        }
+
+        $rows[] = [
+            'field_name' => $field['field_name'],
+            'field_type' => sprintf('%s%s',
+                $field['field_type'],
+                !empty($typeExtra) ? ' (' . implode(';', $typeExtra) . ')' : '',
+            ),
+            'cardinality' => $field['cardinality'] == -1 ? 'Unlimited' : $field['cardinality'],
+        ];
+    }
+
+    return $table->render($rows);
+};
+
+_mkdir($config->getPath(['document']));
+
+foreach ($types as $typeId => $bundles) {
+    $typeDocumentPath = $config->getPath(['document', "$typeId.md"]);
+
+    if (is_file($typeDocumentPath) && !(isset($entityTypeId) || $force)) {
+        _log(
+            'Skipping "%s" since it already exists. Pass \* --force to override.',
+            $typeDocumentPath,
+        );
+        continue;
+    }
+
+    $bundleSections = [];
+
+    $baseFields = extractCommonBundleFields($fields[$typeId]);
+
+    if (!empty($baseFields)) {
+      $bundleSections['__SHARED'] = strtr($templateBundleSection, [
+        '$BUNDLE_ID' => 'SHARED',
+        '$BUNDLE_FIELD_TABLE' => $makeFieldTable($baseFields, $typeId, 'SHARED'),
+      ]);
+    }
+
+    foreach ($bundles as $bundleId => $bundle) {
+      if (!isset($fields[$typeId][$bundleId])) {
+        continue;
+      }
+
+      $bundleSections[$bundleId] = strtr($templateBundleSection, [
+        '$BUNDLE_ID' => $bundleId,
+        '$BUNDLE_FIELD_TABLE' => $makeFieldTable($fields[$typeId][$bundleId], $typeId, $bundleId),
+      ]);
+    }
+
+    _log('Writing "%s"', $typeDocumentPath);
+
+    file_put_contents($typeDocumentPath, strtr($templateType, [
+        '$ENTITY_TYPE_ID' => $typeId,
+        '$BUNDLE_SECTIONS' => implode("\n\n", $bundleSections),
+    ]));
+}
+
+function extractCommonBundleFields(array &$bundles): array {
+  $commonFields = NULL;
+
+  foreach ($bundles as $bundleId => $fields) {
+    if (!is_array($commonFields)) {
+      $commonFields = $fields;
+      continue;
+    }
+
+    $commonFields = array_intersect_key($commonFields, $fields);
+  }
+
+  if (empty($commonFields)) {
+    return [];
+  }
+
+  foreach ($bundles as $bundleId => $fields) {
+    $bundles[$bundleId] = array_diff_key($fields, $commonFields);
+  }
+
+  return $commonFields;
+}
