@@ -231,6 +231,14 @@ For good results it's vital you put high-quality example migrations that exhibit
 `.migraine/templates/migrations`.
 
 
+### 8. Generate markdown files that document all entity types
+
+This task generates a markdown file in ~/.migraine/document for each entity type. This can be very useful to
+brief yourself quickly on a website:
+
+    msie run migraine:document source
+
+
 ## Example aider configuration
 
 At the time of writing I've experienced good results with openai's `o3*` or `o1` models for planning/reasoning, and anthropic's
